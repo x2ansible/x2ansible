@@ -1,4 +1,4 @@
-# X2ansible - convert chef/puppet to ansible playbooks using LlamaStack Agents (RAG-powered)
+# x2ansible - convert chef/puppet to ansible playbooks using LlamaStack Agents (RAG-powered)
 
 Welcome to **x2ansible** —  
 an AI-powered tool to **analyze** and **convert** Chef recipes or Puppet manifests into clean, production-ready **Ansible Playbooks**,  
@@ -78,7 +78,7 @@ ollama run granite-code:8b
 **In another new terminal:**
 
 ```bash
-INFERENCE_MODEL=llama3.2:3b uv run --with llama-stack llama stack build --template ollama --image-type venv --run
+INFERENCE_MODEL=granite-code:8b uv run --with llama-stack llama stack build --template ollama --image-type venv --run
 ```
 
 - This builds and starts your local LlamaStack server, connected to your Ollama model.
@@ -185,12 +185,12 @@ Final Analysis / Playbook Output
 
 # 🛡️ Key Features
 
-- ✅ True agentic execution (no direct LLM prompt hacking).
-- ✅ Best-practice Ansible playbook generation via RAG enrichment.
-- ✅ Automatic creation of `ansible_rules` vector database.
-- ✅ Externalized instruction prompts (easy to customize).
-- ✅ Full logging (`logs/app.log`).
-- ✅ Streaming live output for smooth UI experience.
+- True agentic execution (no direct LLM prompt hacking).
+- Best-practice Ansible playbook generation via RAG enrichment.
+- Automatic creation of `ansible_rules` vector database.
+- Externalized instruction prompts (easy to customize).
+- Full logging (`logs/app.log`).
+- Streaming live output for smooth UI experience.
 
 ---
 
@@ -202,7 +202,7 @@ Final Analysis / Playbook Output
 
 ---
 
-# ❤️ Contributing
+#  Contributing
 
 We welcome PRs, issues, suggestions, and ideas to improve this project!
 
