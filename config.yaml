@@ -8,7 +8,7 @@ llama_stack:
   maas:
     base_url: https://granite-8b-code-instruct-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1
     model: granite-8b-code-instruct-128k
-    api_key: ""
+    api_key: "api-key"
 
 vector_db_chunk_size: 512
 embedding_model: all-MiniLM-L6-v2

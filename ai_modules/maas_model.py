@@ -90,11 +90,11 @@ Ensure correct indentation and formatting.
                 choices = data.get("choices")
                 if not choices or not isinstance(choices, list) or not choices[0].get("text"):
                     logging.error(f"[MaaS] Unexpected response structure: {data}")
-                    yield "❌ Error: MaaS response missing 'choices'."
+                    yield "Error: MaaS response missing 'choices'."
                 else:
                     raw_output = choices[0]["text"]
                     yield sanitize_yaml(flatten_blocks(raw_output))
 
         except Exception as e:
             logging.exception("[MaaS] Error during prompt generation")
-            yield f"❌ Error contacting MaaS: {e}"
+            yield f"Error contacting MaaS: {e}"

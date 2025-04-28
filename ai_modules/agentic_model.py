@@ -11,9 +11,9 @@ class AgenticModel:
         self.vector_db = vector_db
         self.model = "llama3.2:3b"
 
-        logging.info("🔌 Initializing AgenticModel for Chef/Puppet → Ansible conversion")
-        logging.info(f"📡 LlamaStack URL: {self.base_url}")
-        logging.info(f"🧠 Model: {self.model}")
+        logging.info("Initializing AgenticModel for Chef/Puppet → Ansible conversion")
+        logging.info(f"LlamaStack URL: {self.base_url}")
+        logging.info(f"Model: {self.model}")
 
         self.client = LlamaStackClient(base_url=self.base_url)
 
@@ -26,9 +26,9 @@ class AgenticModel:
                 embedding_dimension=384,
                 provider_id="faiss",
             )
-            logging.info(f"✅ Registered vector database '{self.vector_db}'.")
+            logging.info(f"Registered vector database '{self.vector_db}'.")
         else:
-            logging.info(f"✅ Vector database '{self.vector_db}' already exists.")
+            logging.info(f"Vector database '{self.vector_db}' already exists.")
 
     def transform(self, code, mode="convert", stream_ui=False):
         logging.info(f"🚀 transform() called with mode='{mode}', stream_ui={stream_ui}")
@@ -64,7 +64,7 @@ class AgenticModel:
                 stream=True
             )
         except Exception as e:
-            logging.error(f"❌ Error during session or turn creation: {e}")
+            logging.error(f"Error during session or turn creation: {e}")
             yield f"ERROR: {e}"
             return
 
@@ -98,6 +98,6 @@ class AgenticModel:
                 logging.info(f"📄 Loaded instructions from {filename}")
                 return content
         except Exception as e:
-            logging.error(f"❌ Failed to load instructions file {filename}: {e}")
+            logging.error(f"Failed to load instructions file {filename}: {e}")
             return "You are a helpful AI assistant."
 
