@@ -1,0 +1,27 @@
+:doctype: book
+:toc: auto
+:toclevels: 4
+:sectnumlevels: 6
+:numbered:
+:chapter-label:
+:icons: font
+:pdf-page-size: A4
+:source-highlighter: rouge
+:rouge-style: github
+:listing-caption: Listing
+:imagesdir: images/
+
+:revnumber: {gitdate} (commit: {githash})
+:!last-update-label:
+
+// The following lines could become relevant in the future
+
+////
+:pdf-style: redhat
+:pdf-stylesdir: _styles/pdf/
+:pdf-fontsdir: fonts/
+
+ifdef::backend-pdf[]
+:autofit-option:
+endif::[]
+////

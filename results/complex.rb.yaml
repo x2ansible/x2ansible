@@ -1,0 +1,64 @@
+---
+- name: Complex Example Playbook
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: Install required packages
+    apt:
+      name:
+        - vim
+        - git
+        - curl
+        - httpd
+        - mysql-server
+      state: present
+
+  - name: Create deployment user if not present
+    user:
+      name: deploy
+      comment: Deployment User
+      shell: /bin/bash
+      home: /home/deploy
+      manage_home: yes
+      create_mode: yes
+      unless: "id deploy"
+
+  - name: Set up configuration file from template with variables
+    template:
+      src: templates/myapp.conf.erb
+      dest: /etc/myapp.conf
+      mode: '0644'
+      owner: root
+      group: root
+      variables:
+        db_host: "{{ node['myapp']['db_host'] }}"
+        db_user: "{{ node['myapp']['db_user'] }}"
+    notify: restart service myapp
+
+  - name: Render secrets file with database password
+    template:
+      src: templates/secrets.erb.j2
+      dest: /etc/myapp_secrets
+      mode: '0600'
+      owner: root
+      group: root
+    vars:
+      db_password: "{{ lookup('db', 'db_password') }}"
+
+  - name: Enable and start multiple services
+    service:
+      name:
+        - httpd
+        - mysqld
+        - myapp
+      enabled: yes
+      state: started
+      subscribers:
+        - template:/etc/myapp.conf
+
+  - name: Execute custom command on Red Hat platforms
+    execute:
+      cmd: echo "This is Red Hat" > /etc/redhat_message
+      when: "'{{ node['platform'] | lower }}' == 'redhat'"
+      unless: "test -f /etc/redhat_message"

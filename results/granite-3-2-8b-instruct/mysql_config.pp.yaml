@@ -1,0 +1,50 @@
+- name: Install MySQL
+  apt:
+    name: mysql-server
+    state: present
+  tasks: []
+- name: Configure MySQL
+  template:
+    src: templates/mysql/my.cnf.j2
+    dest: /etc/mysql/my.cnf
+    mode: '0644'
+  notify: restart mysqld
+  tasks: []
+- name: Set MySQL root password
+  mysqladmin:
+    user: root
+    password: '{{ root_password }}'
+    logoutput: true
+  when: root_password is defined and old_root_password != ''
+  tasks: []
+- name: Manage MySQL socket file
+  copy:
+    content: /var/run/mysqld/mysqld.sock
+    dest: /etc/mysql/socket.d/mysqld.sock
+    mode: '0644'
+  notify: restart mysqld
+  tasks: []
+- name: Configure MySQL service
+  service:
+    name: mysql
+    enabled: true
+    state: started
+    reload: true
+    restart: true
+  when: restart is true
+  tasks: []
+- name: Manage MySQL log file
+  copy:
+    content: /var/log/mysql/error.log
+    dest: /var/log/mysql/error.log
+    mode: '0644'
+  notify: restart mysqld
+  tasks: []
+- name: Configure firewall rules
+  ufw:
+    rule: allow
+    proto: tcp
+    to_port: '{{ port }}'
+    source: any
+    state: present
+  tasks: []

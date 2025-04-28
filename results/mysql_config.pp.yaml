@@ -1,0 +1,83 @@
+---
+- name: Install and configure MySQL
+  become: yes
+  tasks:
+  - name: Ensure mysql package is installed
+    apt:
+      name: mysql-server
+      state: present
+
+  - name: Start and enable mysql service
+    service:
+      name: mysql
+      enabled: yes
+      state: started
+
+  - name: Set MySQL root password
+    become_method: sudo
+    become_user: root
+    become_password: "{{ lookup('password', item.root_password) }}"
+    when: item.root_password != 'UNSET'
+
+  - name: Create mysql configuration file
+    template:
+      src: templates/mysql/my.cnf.erb
+      dest: /etc/mysql/my.cnf
+      mode: '0644'
+    notify: restart mysql
+
+  - name: Set MySQL socket and pidfile
+    copy:
+      content: "/var/run/mysqld/mysqld.sock"
+      dest: /etc/mysql/mysqld.sock
+      mode: '0644'
+    when: item.socket != ''
+
+  - name: Create datadir
+    file:
+      path: "{{ item.datadir }}"
+      state: directory
+      mode: '0755'
+    with_items:
+      - {{ item.datadir }}
+
+  - name: Manage MySQL configuration options
+    template:
+      src: templates/mysql/my.cnf.pass.erb
+      dest: /etc/mysql/conf.d/{{ item.config_file }}
+      mode: '0644'
+    when: item.etc_root_password
+
+  - name: Set default table engine
+    template:
+      src: templates/mysql/default_engine.erb
+      dest: /etc/mysql/my.cnf
+      mode: '0644'
+    when: item.default_engine != 'UNSET'
+
+  - name: Manage MySQL service restart
+    become_method: sudo
+    become_user: root
+    become_password: "{{ lookup('password', item.root_password) }}"
+    when: item.restart
+
+  - name: Manage MySQL firewall rules
+    ufw:
+      rule: allow inbound mysql
+      state: present
+    when: item.ssl and item.ssl_ca and item.ssl_cert and item.ssl_key
+
+  - name: Set up MySQL root password backup
+    become_method: sudo
+    become_user: root
+    become_password: "{{ lookup('password', item.root_password) }}"
+    when: item.root_password != 'UNSET'
+    notify:
+      - restart mysql
+
+  - name: Manage MySQL service status
+    service:
+      name: mysql
+      enabled: yes
+      state: restarted
+    when: item.restart

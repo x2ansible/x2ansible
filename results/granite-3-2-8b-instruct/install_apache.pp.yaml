@@ -1,0 +1,37 @@
+```yml
+---
+- name: Manage Apache Service
+  hosts: all
+  become: yes
+
+  case:
+    - when 'CentOS|RedHat'
+      case:
+        - when 'x86_64'
+          package:
+            name: httpd
+            state: present
+        - else
+          package:
+            name: httpd.i386
+            state: present
+      service:
+        name: httpd
+        state: "{{ lookup('template', 'ensure') | ternary(ensure, false) }}"
+        enabled: "{{ lookup('fact', 'kernel_architecture') == 'x86_64' ? true : false }}"
+    - when else
+      package:
+        name: httpd
+        state: absent
+      service:
+        name: httpd
+        state: stopped
+        enabled: false
+
+  file:
+    path: /etc/httpd/conf/httpd.conf
+    owner: root
+    group: root
+    mode: '0644'
+    src: "{{ apacheconf | ternary('default', 'puppet:///modules/apache/httpd.conf') }}"
+```

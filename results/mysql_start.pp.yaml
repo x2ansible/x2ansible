@@ -1,0 +1,35 @@
+---
+- name: Create MySQL Database
+  become: yes
+  tasks:
+    - name: Check if mysql service is running
+      become_method: yes
+      block:
+        - stat_info:
+            stat_path: /var/run/mysqld
+          register: mysql_service_status
+        - debug:
+            msg: "MySQL service is not running"
+          when: mysql_service_status.stat.info != 'running'
+    - name: Create MySQL database
+      become_method: yes
+      block:
+        - mysql_db:
+            name: "{{ item }}"
+          loop: "{{ groups['mysql_databases'] }}"
+    - name: Insert into memory
+      become_method: yes
+      params:
+        name: "mysql::db"
+      register: result
+    - debug:
+        msg: "MySQL database created successfully"
+      when: result.stdout | grep -q 'database'
+  handlers:
+    - name: restart mysql service
+      become_method: yes
+      block:
+        - service:
+            name: mysql
+            state: started
+          when: mysql_service_status.stat.info == 'running'

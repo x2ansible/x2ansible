@@ -1,0 +1,29 @@
+default: local
+
+llama_stack:
+  local:
+    base_url: http://localhost:8321
+    model: llama3.2:3b
+
+  maas:
+    base_url: https://granite-8b-code-instruct-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1
+    model: granite-8b-code-instruct-128k
+    api_key: ""
+
+vector_db_chunk_size: 512
+embedding_model: all-MiniLM-L6-v2
+embedding_dimension: 384
+vector_db_provider_id: faiss
+
+docs_folder_root: ./docs
+
+vector_dbs:
+  puppet_docs: puppet
+  chef_docs: chef
+  ansible_docs: ansible
+  ansible_rules: ansible/rules
+
+docling:
+  base_url: https://docling-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1
+  api_key: key
+

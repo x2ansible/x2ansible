@@ -1,0 +1,31 @@
+---
+- name: Install and configure Apache with firewall
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+  - name: Install Apache
+    apt:
+      name: httpd
+      state: present
+
+  - name: Start and enable Apache service
+    service:
+      name: httpd
+      enabled: yes
+      state: started
+
+  - name: Create index.html file
+    template:
+      src: templates/index.html.j2
+      dest: /var/www/html/
+      mode: '0644'
+      owner: root
+      group: root
+
+  - name: Allow HTTP traffic through firewall
+    ufw:
+      rule: allow
+      port: 80
+      proto: tcp

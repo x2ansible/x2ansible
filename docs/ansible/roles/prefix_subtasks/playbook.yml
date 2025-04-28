@@ -1,0 +1,8 @@
+---
+- name: Show how prefixing sub-tasks files help
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  roles:
+    - prefix_show
