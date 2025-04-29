@@ -1,13 +1,13 @@
-# ai_modules/agentic_model.py
-
 import logging
 import os
 import json
 import pprint
 from pathlib import Path
+from uuid import uuid4
 from llama_stack_client import LlamaStackClient
 from llama_stack_client.lib.agents.agent import Agent
 from llama_stack_client.lib.agents.event_logger import EventLogger
+from llama_stack_client.types import Document
 
 # ========== Logging Setup ==========
 logger = logging.getLogger(__name__)
@@ -32,14 +32,15 @@ class AgenticModel:
     def __init__(self, base_url="http://localhost:8321", vector_db="ansible_rules"):
         self.base_url = base_url
         self.vector_db = vector_db
-        self.model = "deepseek-coder:6.7b"
+        self.model = "granite-code:8b"
 
         logger.info("🔌 Initializing AgenticModel for Chef/Puppet → Ansible conversion")
-        logger.info(f"📡 LlamaStack URL: {self.base_url}")
+        logger.info(f"📱 LlamaStack URL: {self.base_url}")
         logger.info(f"🧠 Model: {self.model}")
 
         self.client = LlamaStackClient(base_url=self.base_url)
 
+        # Register vector DB if needed
         vector_db_ids = [db.provider_resource_id for db in self.client.vector_dbs.list()]
         if self.vector_db not in vector_db_ids:
             self.client.vector_dbs.register(
@@ -52,11 +53,42 @@ class AgenticModel:
         else:
             logger.info(f"✅ Vector database '{self.vector_db}' already exists.")
 
+        # Ingest local .md files from ./docs folder
+        docs_path = Path("docs")
+        documents = []
+        if docs_path.exists():
+            for md_file in docs_path.rglob("*.md"):
+                try:
+                    with open(md_file, "r", encoding="utf-8") as f:
+                        content = f.read().strip()
+                        if content:
+                            logger.info(f"📄 Loaded document: {md_file.name}")
+                            documents.append(Document(
+                                content=content,
+                                document_id=str(uuid4()),
+                                metadata={"source": str(md_file)}
+                            ))
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to load {md_file}: {e}")
+
+            if documents:
+                logger.info(f"🌐 Inserting {len(documents)} documents into '{self.vector_db}'...")
+                self.client.tool_runtime.rag_tool.insert(
+                    documents=documents,
+                    vector_db_id=self.vector_db,
+                    chunk_size_in_tokens=512
+                )
+                logger.info("✅ Local RAG ingestion complete.")
+            else:
+                logger.warning("⚠️ No valid markdown documents found in './docs'.")
+        else:
+            logger.warning("⚠️ './docs' folder not found. Skipping ingestion.")
+
     def transform(self, code, mode="convert", stream_ui=False):
         logger.info(f"🚀 transform() called with mode='{mode}', stream_ui={stream_ui}")
 
         instructions = self._load_instructions(mode)
-        logger.debug(f"🧾 Agent Instructions Preview:\n{instructions}")
+        logger.debug(f"🗞 Agent Instructions Preview:\n{instructions}")
 
         agent = Agent(
             client=self.client,
@@ -67,7 +99,7 @@ class AgenticModel:
                     "name": "builtin::rag",
                     "args": {
                         "vector_db_ids": [self.vector_db],
-                        "top_k": 3,
+                        "top_k": 7,
                     }
                 }
             ],
@@ -87,12 +119,13 @@ class AgenticModel:
                 stream=True
             )
         except Exception as e:
-            logger.error(f" Error during session or turn creation: {e}")
+            logger.error(f"❌ Error during session or turn creation: {e}")
             yield f"ERROR: {e}"
             return
 
         output = ""
         rag_contexts = []
+        tool_ran = False
         pp = pprint.PrettyPrinter(indent=2)
 
         for log in EventLogger().log(turn):
@@ -102,6 +135,7 @@ class AgenticModel:
                     yield log.content
 
             if hasattr(log, "tool_results") and log.tool_results:
+                tool_ran = True
                 for tool_result in log.tool_results:
                     if tool_result.get("name") == "builtin::rag":
                         try:
@@ -121,10 +155,13 @@ class AgenticModel:
                                 logger.info(f"    Metadata: {json.dumps(metadata)}")
                                 logger.info(f"    Score: {score}")
                         except Exception as e:
-                            logger.error(f" Error parsing RAG results: {e}")
+                            logger.error(f"❌ Error parsing RAG results: {e}")
 
             if hasattr(log, "inference") and log.inference:
                 logger.debug(f"📤 Model inference output (streamed chunk): {log.inference}")
+
+        if not tool_ran:
+            logger.warning("⚠️ builtin::rag was NOT triggered. Check if model supports tools or input needs more complexity.")
 
         if rag_contexts:
             logger.info("=== FULL RAG CONTEXTS RETRIEVED ===")
@@ -147,7 +184,7 @@ class AgenticModel:
                 logger.info(f"📄 Loaded instructions from {filename}")
                 return content
         except Exception as e:
-            logger.error(f" Failed to load instructions file {filename}: {e}")
+            logger.error(f"❌ Failed to load instructions file {filename}: {e}")
             return "You are a helpful AI assistant."
 
     def _clean_yaml_output(self, output: str) -> str:

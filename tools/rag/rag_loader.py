@@ -130,7 +130,7 @@ for vector_db_id, subfolder in vector_dbs.items():
                 ingested_files.append(str(file))
 
             except Exception as e:
-                print(f"❌ Failed to process {file}: {e}")
+                print(f"Failed to process {file}: {e}")
 
     if documents:
         client.tool_runtime.rag_tool.insert(
@@ -138,7 +138,7 @@ for vector_db_id, subfolder in vector_dbs.items():
             vector_db_id=vector_db_id,
             chunk_size_in_tokens=chunk_size
         )
-        print(f"✅ Ingested {len(ingested_files)} files into '{vector_db_id}' with {len(documents)} chunks")
+        print(f" Ingested {len(ingested_files)} files into '{vector_db_id}' with {len(documents)} chunks")
         save_hash_index(index_path, updated_index)
     else:
         print(f"⏩ No new documents to ingest for '{vector_db_id}'")
