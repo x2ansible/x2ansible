@@ -1,37 +1,55 @@
-import yaml
+# tools/test_query.py
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+import logging
+from ai_modules.agentic_model import AgenticModel
 from llama_stack_client import LlamaStackClient
-from llama_stack_client.lib.models.rag import RAGQueryConfig, QueryGeneratorConfig
 
-# Load config
-with open("config.yaml") as f:
-    config = yaml.safe_load(f)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-profile = config["default"]
-client = LlamaStackClient(base_url=config["llama_stack"][profile]["base_url"])
+def test_rag_generation_and_score():
+    model = AgenticModel(base_url="http://localhost:8321", vector_db="ansible_rules")
+    client = LlamaStackClient(base_url="http://localhost:8321")
 
-query_text = "How should roles be structured in an Ansible playbook?"
+    puppet_code = """
+package { 'httpd':
+  ensure => installed,
+}
+"""
 
-# Define query config just like your curl
-query_config = RAGQueryConfig(
-    query_generator_config=QueryGeneratorConfig(
-        type="default",
-        separator=" "
-    ),
-    max_tokens_in_context=4096,
-    max_chunks=5
-)
+    print("\n🔎 Testing Manual RAG Retrieval + Ansible Playbook Generation...\n")
 
-response = client.tool_runtime.rag_tool.query(
-    content=query_text,
-    vector_db_ids=["ansible_docs"],
-    query_config=query_config
-)
+    # Run the agent
+    generated = ""
+    results = model.transform(puppet_code, mode="convert", stream_ui=False)
+    for chunk in results:
+        generated += chunk
 
-# Print result chunks
-print(f"\n🔍 Query: {query_text}\n")
-print("Top Results:")
-for i, result in enumerate(response.chunk_results, 1):
-    metadata = result.metadata or {}
-    print(f"{i}. Source: {metadata.get('source', 'unknown')}")
-    print(f"   Section: {metadata.get('section_title', 'N/A')}")
-    print(f"   Content: {result.chunk[:300].strip()}...\n")
+    print("\n=== Final Ansible Playbook ===\n")
+    print(generated.strip())
+
+    # Prepare scoring input
+    eval_rows = [
+        {
+            "input_query": puppet_code.strip(),
+            "generated_answer": generated.strip(),
+            "expected_answer": "---"  # just checking if YAML starts properly
+        }
+    ]
+
+    scoring_params = {
+        "basic::starts_with": None,
+    }
+
+    scoring_response = client.scoring.score(
+        input_rows=eval_rows,
+        scoring_functions=scoring_params,
+    )
+
+    print("\n=== Scoring Result ===\n")
+    print(scoring_response)
+
+if __name__ == "__main__":
+    test_rag_generation_and_score()

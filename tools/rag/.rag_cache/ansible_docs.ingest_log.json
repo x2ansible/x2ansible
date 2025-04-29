@@ -1,7 +1,5 @@
 {
-  "ingested": [
-    "docs/ansible/rules/sanity_rules.md"
-  ],
+  "ingested": [],
   "skipped": [
     "docs/ansible/README.adoc",
     "docs/ansible/_style/render.adoc",
@@ -44,6 +42,7 @@
     "docs/ansible/rules/schema.md",
     "docs/ansible/rules/deprecated_module.md",
     "docs/ansible/rules/inline_env_var.md",
+    "docs/ansible/rules/sanity_rules.md",
     "docs/ansible/rules/command_instead_of_shell.md",
     "docs/ansible/rules/no_log_password.md",
     "docs/ansible/rules/meta_runtime.md",
