@@ -1,23 +1,45 @@
 # ai_modules/agentic_model.py
+
 import logging
 import os
+import json
+import pprint
+from pathlib import Path
 from llama_stack_client import LlamaStackClient
 from llama_stack_client.lib.agents.agent import Agent
 from llama_stack_client.lib.agents.event_logger import EventLogger
 
+# ========== Logging Setup ==========
+logger = logging.getLogger(__name__)
+if not logger.hasHandlers():
+    logger.setLevel(logging.INFO)
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    log_file = log_dir / "app.log"
+
+    file_handler = logging.FileHandler(log_file)
+    stream_handler = logging.StreamHandler()
+
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    file_handler.setFormatter(formatter)
+    stream_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
+# ========== AgenticModel Class ==========
 class AgenticModel:
     def __init__(self, base_url="http://localhost:8321", vector_db="ansible_rules"):
         self.base_url = base_url
         self.vector_db = vector_db
-        self.model = "deepseek-coder:6.7b"  # or your choice of model
+        self.model = "deepseek-coder:6.7b"
 
-        logging.info("🔌 Initializing AgenticModel for Chef/Puppet → Ansible conversion")
-        logging.info(f"📡 LlamaStack URL: {self.base_url}")
-        logging.info(f"🧠 Model: {self.model}")
+        logger.info("🔌 Initializing AgenticModel for Chef/Puppet → Ansible conversion")
+        logger.info(f"📡 LlamaStack URL: {self.base_url}")
+        logger.info(f"🧠 Model: {self.model}")
 
         self.client = LlamaStackClient(base_url=self.base_url)
 
-        # Check if vector DB exists
         vector_db_ids = [db.provider_resource_id for db in self.client.vector_dbs.list()]
         if self.vector_db not in vector_db_ids:
             self.client.vector_dbs.register(
@@ -26,14 +48,15 @@ class AgenticModel:
                 embedding_dimension=384,
                 provider_id="faiss",
             )
-            logging.info(f"✅ Registered vector database '{self.vector_db}'.")
+            logger.info(f"✅ Registered vector database '{self.vector_db}'.")
         else:
-            logging.info(f"✅ Vector database '{self.vector_db}' already exists.")
+            logger.info(f"✅ Vector database '{self.vector_db}' already exists.")
 
     def transform(self, code, mode="convert", stream_ui=False):
-        logging.info(f"🚀 transform() called with mode='{mode}', stream_ui={stream_ui}")
+        logger.info(f"🚀 transform() called with mode='{mode}', stream_ui={stream_ui}")
 
         instructions = self._load_instructions(mode)
+        logger.debug(f"🧾 Agent Instructions Preview:\n{instructions}")
 
         agent = Agent(
             client=self.client,
@@ -48,7 +71,7 @@ class AgenticModel:
                     }
                 }
             ],
-            tool_config={"tool_choice": "auto"},
+            tool_config={"tool_choice": "required"},
             sampling_params={
                 "strategy": {"type": "top_p", "temperature": 0.3, "top_p": 0.9},
                 "max_tokens": 2048,
@@ -64,45 +87,70 @@ class AgenticModel:
                 stream=True
             )
         except Exception as e:
-            logging.error(f"❌ Error during session or turn creation: {e}")
+            logger.error(f" Error during session or turn creation: {e}")
             yield f"ERROR: {e}"
             return
 
         output = ""
+        rag_contexts = []
+        pp = pprint.PrettyPrinter(indent=2)
+
         for log in EventLogger().log(turn):
             if hasattr(log, "content") and isinstance(log.content, str):
                 output += log.content
                 if stream_ui:
                     yield log.content
 
-            if hasattr(log, "tool_calls") and log.tool_calls:
-                for tool_call in log.tool_calls:
-                    if tool_call.get("name") == "builtin::rag":
-                        logging.info(f"🔎 Retrieved RAG context: {tool_call.get('arguments', {})}")
+            if hasattr(log, "tool_results") and log.tool_results:
+                for tool_result in log.tool_results:
+                    if tool_result.get("name") == "builtin::rag":
+                        try:
+                            rag_result = tool_result.get("result", {})
+                            if isinstance(rag_result, str):
+                                rag_result = json.loads(rag_result)
+
+                            rag_contexts.append(rag_result)
+
+                            logger.info("📚 RAG Retrieved Context (Preview):")
+                            for i, doc in enumerate(rag_result.get("documents", [])):
+                                text_preview = doc.get('text', '')[:100]
+                                metadata = doc.get('metadata', {})
+                                score = doc.get('score', 0)
+
+                                logger.info(f"  Document {i+1}: {text_preview}...")
+                                logger.info(f"    Metadata: {json.dumps(metadata)}")
+                                logger.info(f"    Score: {score}")
+                        except Exception as e:
+                            logger.error(f" Error parsing RAG results: {e}")
 
             if hasattr(log, "inference") and log.inference:
-                logging.info(f"📤 Model inference output (streamed chunk): {log.inference}")
+                logger.debug(f"📤 Model inference output (streamed chunk): {log.inference}")
+
+        if rag_contexts:
+            logger.info("=== FULL RAG CONTEXTS RETRIEVED ===")
+            for i, context in enumerate(rag_contexts):
+                logger.info(f"📖 RAG Context {i+1}:")
+                pp.pprint(context)
+                logger.info("---")
 
         output = self._clean_yaml_output(output)
 
         if not stream_ui:
-            logging.info(f"📋 Final complete model output:\n{output}")
+            logger.info(f"📋 Final complete model output:\n{output}")
             yield output
 
     def _load_instructions(self, mode):
-        """Load prompt instructions from external file based on mode."""
         filename = "tools/analyze_instructions.txt" if mode == "analyze" else "tools/convert_instructions.txt"
         try:
             with open(filename, "r") as f:
                 content = f.read().strip()
-                logging.info(f"📄 Loaded instructions from {filename}")
+                logger.info(f"📄 Loaded instructions from {filename}")
                 return content
         except Exception as e:
-            logging.error(f"❌ Failed to load instructions file {filename}: {e}")
+            logger.error(f" Failed to load instructions file {filename}: {e}")
             return "You are a helpful AI assistant."
 
     def _clean_yaml_output(self, output: str) -> str:
-        """Clean any unwanted markdown or text outside pure YAML."""
         lines = output.strip().splitlines()
         cleaned = []
         for line in lines:
