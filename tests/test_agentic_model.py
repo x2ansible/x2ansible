@@ -32,6 +32,7 @@ def main():
 
     #   Puppet input (forces RAG usage)
     input_code = """
+    Can you convert the following code to ansible 
     class webapp {
       package { [ 'httpd', 'mysql', 'git', 'curl' ]:
         ensure => installed,
