@@ -27,7 +27,7 @@ from ai_modules.agentic_model import AgenticModel
 def main():
     model = AgenticModel(
         base_url="http://localhost:8321",
-        vector_db="ansible_rules"
+        vector_db="convert"
     )
 
     #   Puppet input (forces RAG usage)

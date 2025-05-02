@@ -1,0 +1,13 @@
+The Puppet `cron` resource manages scheduled tasks. Useful attributes include:
+- `command`: The script or binary to run
+- `user`: User to run the job as
+- `hour`, `minute`, `weekday`, etc.
+
+Example:
+cron { 'nightly_backup':
+  ensure  => present,
+  command => '/usr/local/bin/backup.sh',
+  user    => 'root',
+  hour    => 2,
+  minute  => 30,
+}

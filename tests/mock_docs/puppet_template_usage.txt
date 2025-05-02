@@ -1,0 +1,11 @@
+puppet_template_usage.txtPuppet supports `template()` functions within `file` resources to render ERB templates.
+These templates enable dynamic content using variables like `$::hostname`, `$config`, etc.
+
+Example:
+file { '/etc/config.yaml':
+  ensure  => file,
+  content => template('my_module/config.yaml.erb'),
+  owner   => 'root',
+  group   => 'root',
+  mode    => '0644',
+}

@@ -1,164 +1,115 @@
 import os
-import json
+import uuid
 import logging
 from pathlib import Path
-from uuid import uuid4
-from llama_stack_client import LlamaStackClient
-from llama_stack_client.lib.agents.agent import Agent
+
+from llama_stack_client import LlamaStackClient, Agent, RAGDocument
+from llama_stack_client.types import UserMessage
 from llama_stack_client.lib.agents.event_logger import EventLogger
-from llama_stack_client.types import Document
 
-logger = logging.getLogger("agentic_model")
-logger.setLevel(logging.INFO)
+# === Setup Logging ===
 log_dir = Path("logs")
-log_dir.mkdir(parents=True, exist_ok=True)
-log_file = log_dir / "app.log"
+log_dir.mkdir(exist_ok=True)
+logging.basicConfig(
+    filename=log_dir / "agentic_model.log",
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+logging.getLogger().addHandler(console)
 
-file_handler = logging.FileHandler(log_file, encoding="utf-8")
-stream_handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-file_handler.setFormatter(formatter)
-stream_handler.setFormatter(formatter)
-
-if not logger.handlers:
-    logger.addHandler(file_handler)
-    logger.addHandler(stream_handler)
 
 class AgenticModel:
-    def __init__(self, base_url="http://localhost:8321", vector_db="ansible_rules"):
+    def __init__(self, base_url="http://localhost:8321", vector_db="puppet_docs"):
         self.base_url = base_url
         self.vector_db = vector_db
-        self.model = "granite-code:8b"
-        self.ingestion_marker = Path(".ingestion_complete")
-
-        logger.info("Initializing AgenticModel for Chef/Puppet → Ansible conversion")
-        logger.info(f"LlamaStack URL: {self.base_url}")
-        logger.info(f"Model: {self.model}")
-
+        self.model = "llama3.2:3b"
+        self.embedding_model = "all-MiniLM-L6-v2"
+        self.embedding_dim = 384
         self.client = LlamaStackClient(base_url=self.base_url)
         self._ensure_vector_db()
-        if not self.ingestion_marker.exists():
-            self._ingest_local_docs()
 
     def _ensure_vector_db(self):
-        vector_db_ids = [db.provider_resource_id for db in self.client.vector_dbs.list()]
-        if self.vector_db not in vector_db_ids:
+        existing = [db.provider_resource_id for db in self.client.vector_dbs.list()]
+        if self.vector_db not in existing:
             self.client.vector_dbs.register(
                 vector_db_id=self.vector_db,
-                embedding_model="all-MiniLM-L6-v2",
-                embedding_dimension=384,
+                embedding_model=self.embedding_model,
+                embedding_dimension=self.embedding_dim,
                 provider_id="faiss",
             )
-            logger.info(f"Registered vector database '{self.vector_db}'.")
-        else:
-            logger.info(f"Vector database '{self.vector_db}' already exists.")
-
-    def _ingest_local_docs(self):
-        docs_path = Path("docs")
-        documents = []
-        if docs_path.exists():
-            for md_file in docs_path.rglob("*.md"):
-                try:
-                    with open(md_file, "r", encoding="utf-8") as f:
-                        content = f.read().strip()
-                        if content:
-                            logger.info(f"Loaded document: {md_file.name}")
-                            documents.append(Document(
-                                content=content,
-                                document_id=str(uuid4()),
-                                metadata={"source": str(md_file)}
-                            ))
-                except Exception as e:
-                    logger.warning(f"Failed to load {md_file}: {e}")
-
-            if documents:
-                logger.info(f"Inserting {len(documents)} documents into '{self.vector_db}'...")
-                self.client.tool_runtime.rag_tool.insert(
-                    documents=documents,
-                    vector_db_id=self.vector_db,
-                    chunk_size_in_tokens=512
-                )
-                logger.info("RAG ingestion complete.")
-                self.ingestion_marker.touch()
-            else:
-                logger.warning("No valid markdown documents found in './docs'.")
-        else:
-            logger.warning("'./docs' folder not found. Skipping ingestion.")
+            logging.info(f"✅ Registered vector DB: {self.vector_db}")
 
     def transform(self, code, mode="convert", stream_ui=False):
-        logger.info(f"transform() called with mode='{mode}', stream_ui={stream_ui}")
+        logging.info(f"▶️ Running AgenticModel.transform with mode={mode}")
 
-        instructions = self._load_instructions(mode)
-        logger.info(f"Loaded instructions from tools/{mode}_instructions.txt")
-
-        session_prompts = [
-            "Retrieve best practices for writing Ansible playbooks.",
-            f"Summarize the following Puppet/Chef code in simple englosh explaining what it does in steps?\n\n{code}",
-            f"Convert the above understanding and code into a valid Ansible playbook YAML only using the best practises retreived previously."
-        ]
-
-        agent = Agent(
-            client=self.client,
+        # Step 1: Run RAG search to get contextual docs
+        rag_agent = Agent(
+            self.client,
             model=self.model,
-            instructions=instructions,
+            instructions="Use the RAG tool to fetch IaC-related context.",
             tools=[{
-                "name": "builtin::rag",
+                "name": "builtin::rag/knowledge_search",
                 "args": {
                     "vector_db_ids": [self.vector_db],
                     "top_k": 5
                 }
             }],
-            tool_config={"tool_choice": "required"},
-            sampling_params={
-                "strategy": {"type": "top_p", "temperature": 0.3, "top_p": 0.9},
-                "max_tokens": 2048,
-            },
-            max_infer_iters=4,
+        )
+        rag_session_id = rag_agent.create_session("enrich")
+        rag_turn = rag_agent.create_turn(
+            messages=[UserMessage(role="user", content="Puppet file resource definition")],
+            session_id=rag_session_id,
+            stream=False
+        )
+        tool_step = next((s for s in rag_turn.steps if s.step_type == "tool_execution"), None)
+        tool_context = tool_step.tool_responses[0].content if tool_step else ""
+
+        # Log RAG chunks
+        logging.info("🧠 RAG Context:")
+        if isinstance(tool_context, list):
+            for i, item in enumerate(tool_context):
+                logging.info(f"Chunk {i+1}: {getattr(item, 'text', str(item))}")
+        else:
+            logging.info(tool_context)
+
+        # Step 2: Build final prompt
+        if mode == "analyze":
+            prompt = (
+                "You are an AI analyst.\n"
+                "Explain in clear English what the following Puppet or Chef code does step by step:\n\n"
+                f"```puppet\n{code}\n```"
+            )
+        else:
+            prompt = (
+                "You are an AI agent that converts Puppet or Chef code to a well-structured Ansible playbook.\n\n"
+                "Here is the Puppet code:\n"
+                f"```puppet\n{code}\n```\n\n"
+                "Here is helpful documentation context retrieved from RAG:\n"
+                f"{tool_context}\n\n"
+                "Generate a valid Ansible playbook in YAML format only. Do not include explanations."
+            )
+
+        logging.info("🧠 Final combined prompt:\n%s", prompt)
+
+        # Step 3: Generator agent for playbook or analysis
+        generator_agent = Agent(
+            self.client,
+            model=self.model,
+            instructions="You generate playbooks or explain IaC code using helpful context.",
+        )
+        session_id = generator_agent.create_session(f"convert2ansible-{mode}")
+        turn = generator_agent.create_turn(
+            messages=[UserMessage(role="user", content=prompt)],
+            session_id=session_id,
+            stream=stream_ui,
         )
 
-        try:
-            session_id = agent.create_session(session_name=f"convert2ansible-{mode}")
-            prompt_index = 0
-            full_output = ""
-            for prompt in session_prompts:
-                logger.info(f"Sending prompt {prompt_index+1}: {prompt}")
-                turn = agent.create_turn(
-                    session_id=session_id,
-                    messages=[{"role": "user", "content": prompt}],
-                    stream=True
-                )
-                content_accum = ""
-                for log in EventLogger().log(turn):
-                    if hasattr(log, "content") and isinstance(log.content, str):
-                        content_accum += log.content
-                        if stream_ui and prompt_index == 1 and mode == "analyze":
-                            yield log.content
-                        if stream_ui and prompt_index == 2 and mode == "convert":
-                            yield log.content
-                full_output += content_accum
-                prompt_index += 1
-
-            if not stream_ui:
-                if mode == "convert":
-                    yield self._clean_yaml_output(full_output)
-                else:
-                    yield full_output
-
-        except Exception as e:
-            logger.error(f"Agent session or turn creation failed: {e}")
-            yield f"ERROR: {e}"
-
-    def _load_instructions(self, mode):
-        filename = f"tools/{mode}_instructions.txt"
-        try:
-            with open(filename, "r", encoding="utf-8") as f:
-                return f.read().strip()
-        except Exception as e:
-            logger.error(f"Failed to load instructions file {filename}: {e}")
-            return "You are a helpful assistant."
-
-    def _clean_yaml_output(self, output):
-        lines = output.strip().splitlines()
-        return "\n".join(
-            line for line in lines if not line.strip().startswith("```")
-        ).strip()
+        # Step 4: Return output
+        if stream_ui:
+            for step in EventLogger().log(turn):
+                if hasattr(step, "content"):
+                    yield step.content
+        else:
+            yield turn.output_message.content

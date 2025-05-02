@@ -1,3 +1,0 @@
----
-# ansible specific variables
-ansible_user: wall-e

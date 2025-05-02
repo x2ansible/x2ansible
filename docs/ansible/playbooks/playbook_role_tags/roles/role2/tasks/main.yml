@@ -1,5 +1,0 @@
----
-# tasks file for role2
-- name: Output my name
-  ansible.builtin.debug:
-    msg: I am role 2

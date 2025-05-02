@@ -1,0 +1,10 @@
+Puppet supports `vcsrepo` for managing Git repositories. You must install the `puppetlabs/vcsrepo` module.
+
+Example:
+vcsrepo { '/var/www/html/webapp':
+  ensure   => present,
+  provider => git,
+  source   => 'https://github.com/example/webapp.git',
+  revision => 'main',
+  require  => Package['git'],
+}
