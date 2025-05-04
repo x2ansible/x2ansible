@@ -8,6 +8,8 @@ This project combines a **local LlamaStack server**, **Ollama model serving**, a
 
 ---
 
+
+
 ## 🚀 What This Solution Does
 
 - **Chef/Puppet → Ansible Playbook Conversion:**
@@ -29,6 +31,55 @@ This project combines a **local LlamaStack server**, **Ollama model serving**, a
 
 ---
 
+## Solution Design 
+Start
+  |
+  v
++---------------------------+
+| 1️⃣ Load Puppet/Chef Code |
++---------------------------+
+  |
+  v
++------------------------------------+
+| 2️⃣ Create Agent A (RAG Agent)     |
+|  • Tool: builtin::rag/knowledge_search |
++------------------------------------+
+  |
+  v
++------------------------+
+| 🔁 Turn 1 (Agent A)    |
+| Input: "puppet file resource"      |
+| Output: RAG context chunks         |
++------------------------+
+  |
+  v
++---------------------------------------+
+| 3️⃣ Combine:                          |
+|  • Puppet Code                        |
+|  • Retrieved RAG Context              |
+|  → Build single combined LLM prompt   |
++---------------------------------------+
+  |
+  v
++------------------------------+
+| 4️⃣ Create Agent B (LLM Agent) |
+|  • No tools                   |
+|  • Instructions depend on mode|
++------------------------------+
+  |
+  v
++------------------------+
+| 🔁 Turn 2 (Agent B)    |
+| Input: Combined prompt |
+| Output:                |
+|  • If mode == analyze: English summary |
+|  • If mode == convert: Ansible YAML    |
++------------------------+
+  |
+  v
+Done 🎉
+
+
 # ⚙️ Setup Instructions
 
 ### 1. Clone the Repository
@@ -36,6 +87,7 @@ This project combines a **local LlamaStack server**, **Ollama model serving**, a
 ```bash
 git clone https://github.com/rrbanda/x2ansible.git
 cd x2ansible
+
 ```
 
 ---

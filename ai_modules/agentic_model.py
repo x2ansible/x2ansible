@@ -10,14 +10,23 @@ from llama_stack_client.lib.agents.event_logger import EventLogger
 # === Setup Logging ===
 log_dir = Path("logs")
 log_dir.mkdir(exist_ok=True)
+
+# Create base logger
 logging.basicConfig(
     filename=log_dir / "agentic_model.log",
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
+
+# Add console logging
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 logging.getLogger().addHandler(console)
+
+# Add app.log file logging
+app_log = logging.FileHandler(log_dir / "app.log")
+app_log.setLevel(logging.INFO)
+logging.getLogger().addHandler(app_log)
 
 
 class AgenticModel:
@@ -39,7 +48,7 @@ class AgenticModel:
                 embedding_dimension=self.embedding_dim,
                 provider_id="faiss",
             )
-            logging.info(f"✅ Registered vector DB: {self.vector_db}")
+            logging.info(f"Registered vector DB: {self.vector_db}")
 
     def transform(self, code, mode="convert", stream_ui=False):
         logging.info(f"▶️ Running AgenticModel.transform with mode={mode}")
@@ -91,7 +100,7 @@ class AgenticModel:
                 "Generate a valid Ansible playbook in YAML format only. Do not include explanations."
             )
 
-        logging.info("🧠 Final combined prompt:\n%s", prompt)
+        logging.info(" Final combined prompt:\n%s", prompt)
 
         # Step 3: Generator agent for playbook or analysis
         generator_agent = Agent(
