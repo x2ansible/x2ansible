@@ -97,7 +97,6 @@ routing_map = {
     )
 }
 
-# === Fixed Named Agents for Orchestration Chain ===
 
 worker_agent = Agent(
     client,
