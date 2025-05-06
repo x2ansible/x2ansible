@@ -1,0 +1,14 @@
+The Puppet `file` resource manages file content and attributes. It supports:
+- `ensure => present | absent`: Controls presence.
+- `owner`, `group`, `mode`: Define file permissions.
+- `source` or `content`: Specifies how to populate the file.
+- `notify`: Triggers other resources when the file changes.
+
+Example:
+file { '/etc/motd':
+  ensure  => file,
+  content => 'Welcome!',
+  owner   => 'root',
+  group   => 'root',
+  mode    => '0644',
+}
