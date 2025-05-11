@@ -1,2 +1,0 @@
-You are a helpful assistant. You have access to a number of tools.
-Whenever a tool is called, be sure return the Response in a friendly and helpful tone.
