@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentic-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agentic-ui
+  template:
+    metadata:
+      labels:
+        app: agentic-ui
+    spec:
+      containers:
+        - name: ui
+          image: quay.io/rbrhssa/x2ansible:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+            - name: tmp-volume
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: agentic-config
+        - name: tmp-volume
+          emptyDir: {}

@@ -1,0 +1,12 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: agentic-ui
+spec:
+  to:
+    kind: Service
+    name: agentic-ui
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge

@@ -1,267 +1,171 @@
-# x2ansible - convert chef/puppet to ansible playbooks using LlamaStack Agents (RAG-powered)
+# x2ansible - Convert Chef/Puppet to Ansible Playbooks using LlamaStack Agents (RAG-powered)
 
-Welcome to **x2ansible** —  
-an AI-powered tool to **analyze** and **convert** Chef recipes or Puppet manifests into clean, production-ready **Ansible Playbooks**,  
-powered by **LlamaStack Agents** and **Retrieval-Augmented Generation (RAG)**.
+Welcome to **x2ansible** — an AI-powered tool to **analyze** and **convert** Chef recipes or Puppet manifests into clean, production-ready **Ansible Playbooks**,  
+built using **LlamaStack** .
 
-This project combines a **local LlamaStack server**, **Ollama model serving**, and a **Streamlit UI** to streamline Infrastructure-as-Code modernization.
+This project uses a **Llama-stack server**, **Ollama/vllm served LLM**, and a **Streamlit UI** to streamline Infrastructure-as-Code modernization.
 
 ---
 
+## 🚀 What This Solution Does ?
 
-
-## 🚀 What This Solution Does
-
-- **Chef/Puppet → Ansible Playbook Conversion:**
+- **Chef/Puppet → Ansible Playbook Conversion**
   - Upload, browse, or Git-clone Chef/Puppet code.
   - An agent analyzes the code, retrieves best practices via RAG, and generates clean Ansible Playbooks.
 
-- **Code Analysis (Explain Mode):**
-  - Alternatively, you can ask the agent to **analyze** your code —  
-    it explains what the Chef/Puppet scripts are doing, in professional plain English.
+- **Code Analysis (Explain Mode)**
+  - Alternatively, the agent can **explain** what your Chef/Puppet scripts do in plain, professional English.
 
-- **Streaming UI:**
-  - Results stream live into the Streamlit interface: side-by-side Analysis and Playbook views.
+- **Live Streaming UI**
+  - See results update in real-time inside a split-view Streamlit app.
 
-- **Built-in RAG Retrieval:**
-  - The agent uses a custom `ansible_rules` vector database to fetch Ansible best practices during playbook generation.
+- **Built-in RAG Retrieval**
+  - Uses a vector DB of best practices (`ansible_rules`) for accurate, context-aware conversion.
 
-- **Agentic Execution:**
-  - Everything is done by LlamaStack Agents — no direct LLM calls — making it modular, explainable, and extendable.
+- **Agentic Execution**
+  - Modular and extensible: no direct LLM prompts, only LlamaStack Agents and tools.
 
 ---
 
-## Solution Design 
-Start
-  |
-  v
-+---------------------------+
-| 1️⃣ Load Puppet/Chef Code |
-+---------------------------+
-  |
-  v
-+------------------------------------+
-| 2️⃣ Create Agent A (RAG Agent)     |
-|  • Tool: builtin::rag/knowledge_search |
-+------------------------------------+
-  |
-  v
-+------------------------+
-| 🔁 Turn 1 (Agent A)    |
-| Input: "puppet file resource"      |
-| Output: RAG context chunks         |
-+------------------------+
-  |
-  v
-+---------------------------------------+
-| 3️⃣ Combine:                          |
-|  • Puppet Code                        |
-|  • Retrieved RAG Context              |
-|  → Build single combined LLM prompt   |
-+---------------------------------------+
-  |
-  v
-+------------------------------+
-| 4️⃣ Create Agent B (LLM Agent) |
-|  • No tools                   |
-|  • Instructions depend on mode|
-+------------------------------+
-  |
-  v
-+------------------------+
-| 🔁 Turn 2 (Agent B)    |
-| Input: Combined prompt |
-| Output:                |
-|  • If mode == analyze: English summary |
-|  • If mode == convert: Ansible YAML    |
-+------------------------+
-  |
-  v
-Done 🎉
-
-
-# ⚙️ Setup Instructions
+## ⚙️ Setup Instructions
 
 ### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/rrbanda/x2ansible.git
 cd x2ansible
-
-```
-
----
+````
 
 ### 2. Set Up Python Environment
-
-**Create and activate a virtual environment:**
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
----
-
-### 3. Install Required Python Packages
-
-**Install dependencies from `requirements.txt`:**
+### 3. Install Python Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
-
 ### 4. Start Ollama and Load Granite Model
 
-**In a new terminal:**
-
 ```bash
-ollama run granite-code:8b
+ollama run llama3.2:3b
 ```
 
-- This starts the `granite-code:8b` model locally for inference.
+### 5. Build and Run LlamaStack
 
+```bash
+INFERENCE_MODEL=llama3.2:3b uv run --with llama-stack llama stack build --template ollama --image-type venv --run
+```
+
+### 6. 📄 Configure and verify models using `llama-stack-client models list`
+```
+| Model Type | Identifier              | Provider Resource ID      | Metadata                               | Provider ID |
+|------------|--------------------------|----------------------------|----------------------------------------|-------------|
+| embedding  | all-MiniLM-L6-v2        | all-minilm:latest          | {'embedding_dimension': 384.0}         | ollama      |
+| llm        | llama3.2:3b             | llama3.2:3b                |                                        | ollama      |
+
+```
+**Total Models:** 2
 ---
 
-### 5. Build and Run the LlamaStack Server
+### 7. Launch the App
 
-**In another new terminal:**
 
-```bash
-INFERENCE_MODEL=granite-code:8b uv run --with llama-stack llama stack build --template ollama --image-type venv --run
-```
-
-- This builds and starts your local LlamaStack server, connected to your Ollama model.
-
----
-
-### 6. Configure and Register Your Model
-
-**In your project virtual environment:**
-
-- Configure the LlamaStack client:
-
-```bash
-llama-stack-client configure --endpoint http://localhost:8321 --api-key none
-```
-
-- Register your granite model:
-
-```bash
-llama-stack-client models register granite-code:8b
-```
-
-- Confirm that the model is registered:
-
-```bash
-llama-stack-client models list
-```
-
-You should see `granite-code:8b` and `llama3.2:3b` listed.
-
----
-
-### 7. Launch the Streamlit App
-
-**Still in your project root with the virtual environment activated:**
-
-```bash
 streamlit run app.py
 ```
-
-The Streamlit UI will open at [http://localhost:8501](http://localhost:8501).
 
 ---
 
 ## 📚 How to Use the App
 
-| Step | Action |
-|:---|:---|
-| 1 | Select **Agentic** backend in the sidebar. |
-| 2 | Choose your **file source**: Upload, Browse local files, or Git Clone. |
-| 3 | Upload or select Chef/Puppet files for analysis or conversion. |
-| 4 | Click **🚀 Start Conversion**. |
-| 5 | Watch live **Analysis** and **Ansible Playbook** generation side-by-side! |
-| 6 | Download final playbooks and summaries from the interface if needed. |
+| Step | Action                                           |
+| ---- | ------------------------------------------------ |
+| 1    | Select **Agentic** backend in the sidebar.       |
+| 2    | Choose file source (Upload, Browse, Git Repo).   |
+| 3    | Upload or select Puppet/Chef files.              |
+| 4    | Click **🚀 Start Conversion**.                   |
+| 5    | View **Analysis** and **Playbook** side-by-side. |
+| 6    | Download final output if needed.                 |
 
 ---
 
-## 🧠 Internal Agent Architecture
+## 🧠 Agent Flow Diagram
 
 ```plaintext
-User Input (Chef/Puppet Code)
-          ↓
-AgenticModel.transform(mode="analyze" or "convert")
-          ↓
-Creates LlamaStack Agent dynamically
-          ↓
-    ┌───────────────────────────────────────┐
-    │ builtin::rag Tool (Vector DB: ansible_rules) │
-    └───────────────────────────────────────┘
-          ↓ (retrieved best practices)
-Agent enriches context
-          ↓
-LLM Inference (via LlamaStack Model: llama3.2:3b)
-          ↓
-Streaming Output
-          ↓
-Frontend Display (Streamlit)
-          ↓
-Optional Post-processing (sanitize YAML, flatten blocks)
-          ↓
-Final Analysis / Playbook Output
+1. Load Input (Puppet or Chef)
+2. Agent A: RAG lookup via builtin::rag/knowledge_search
+3. Retrieve context from vector DB (e.g., ansible_rules)
+4. Build prompt with both code and context
+5. Agent B: Generate output via LLM
+   └─ If analyze → explanation
+   └─ If convert → Ansible YAML
+6. Stream results back to UI
 ```
 
 ---
 
-# 📦 Project Structure
+## 📦 Project Structure
 
 ```plaintext
-├── app.py                    # Streamlit UI application
+├── app.py                      # Streamlit frontend
 ├── ai_modules/
-│   └── agentic_model.py       # Agent wrapper handling inference
-├── tools/
-│   ├── analyze_instructions.txt  # Text prompt for analysis mode
-│   └── convert_instructions.txt  # Text prompt for convert mode
-├── uploads/                  # Uploaded input files
-├── results/                   # Generated playbooks and summaries
-├── settings.config            # Settings (e.g., default folders)
-├── logs/
-│   └── app.log                 # Logging output
-└── README.md                  # This file!
+│   └── agentic_model.py        # Core agent logic
+├── tools/                      # Optional external prompt templates
+├── uploads/                    # Uploaded code samples
+├── results/                    # Converted YAML and summaries
+├── logs/                       # Log files (defaults to /tmp in OpenShift)
+├── config.yaml                 # Agentic runtime config
+└── settings.config             # UI config (folder paths)
 ```
 
 ---
 
-# 🛡️ Key Features
+## 🛡️ Features
 
-- True agentic execution (no direct LLM prompt hacking).
-- Best-practice Ansible playbook generation via RAG enrichment.
-- Automatic creation of `ansible_rules` vector database.
-- Externalized instruction prompts (easy to customize).
-- Full logging (`logs/app.log`).
-- Streaming live output for smooth UI experience.
-
----
-
-# 📢 Notes
-
-- Playbooks generated assume a **RHEL-based** system (preferring `yum` over `apt`).
-- `when: true` conditions are automatically removed if unnecessary.
-- `.erb` templates should be replaced by `.j2` templates manually after conversion (or post-processing improvements can be added).
+* True agentic architecture (no manual LLM prompt injection)
+* RAG-powered Ansible best-practice enrichment
+* Inline YAML validation rules
+* Hardened to run in Podman, Docker, OpenShift (USER 1001 safe)
+* Live streaming output in Streamlit
 
 ---
 
-#  Contributing
+## 🔧 OpenShift Deployment
 
-We welcome PRs, issues, suggestions, and ideas to improve this project!
+Deploy with:
+
+```bash
+oc apply -f configmap.yaml
+oc apply -f deployment.yaml
+oc apply -f service.yaml
+oc apply -f route.yaml
+```
+
+Then access via the OpenShift route URL to start using the tool.
 
 ---
 
-# 📜 License
+## 📌 Notes
 
-MIT License
+* Generated playbooks assume RHEL-based systems (uses `yum`)
+* `.erb` templates are renamed to `.j2` but manual conversion of syntax may be needed
+* The output adheres to `ansible-lint` rules for cleanliness and safety
+* Streaming output may be rate-limited by your backend model — adjust accordingly
+
+---
+
+## 📜 License
+
+MIT License – open for reuse, extension, and improvement.
+
+---
+
+## 🤝 Contributing
+
+PRs, issues, and ideas are welcome! Help us improve x2ansible.
 
 ---

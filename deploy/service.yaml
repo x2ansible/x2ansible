@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentic-ui
+spec:
+  selector:
+    app: agentic-ui
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP

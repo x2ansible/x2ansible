@@ -1,0 +1,2 @@
+{"puppet":"file { '/etc/myapp': ensure => directory, owner => 'root', group => 'root', mode => '0755' }","ansible":"- name: Ensure /etc/myapp exists\n  ansible.builtin.file:\n    path: /etc/myapp\n    state: directory\n    owner: root\n    group: root\n    mode: '0755'"}
+{"puppet":"service { 'httpd': ensure => running, enable => true }","ansible":"- name: Ensure httpd is running\n  ansible.builtin.service:\n    name: httpd\n    state: started\n    enabled: yes"}

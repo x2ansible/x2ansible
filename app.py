@@ -11,18 +11,30 @@ import logging
 from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
+import sys
+from pathlib import Path
 
-# === Logging ===
-# Setup logging properly before Streamlit starts
-if not logging.getLogger().hasHandlers():
-    log_dir = Path("logs")
-    log_dir.mkdir(parents=True, exist_ok=True)
-    logging_path = log_dir / "app.log"
-    logging.basicConfig(
-        filename=str(logging_path),
-        level=logging.DEBUG,
-        format="%(asctime)s [%(levelname)s] %(message)s"
-    )
+# === Hardened logging: always console, file only if /tmp available ===
+log_level = logging.DEBUG
+log_format = "%(asctime)s [%(levelname)s] %(message)s"
+
+# Always log to console
+logging.basicConfig(
+    level=log_level,
+    format=log_format,
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+
+# Try optional /tmp file logging
+try:
+    tmp_log_path = Path("/tmp/app.log")
+    file_handler = logging.FileHandler(tmp_log_path)
+    file_handler.setLevel(log_level)
+    file_handler.setFormatter(logging.Formatter(log_format))
+    logging.getLogger().addHandler(file_handler)
+except Exception as e:
+    logging.warning(f"⚠️ Skipping file log due to: {e}")
+
 
 # === Page Config ===
 st.set_page_config(
@@ -363,7 +375,7 @@ with st.sidebar:
 
     elif backend == "agentic":
         from ai_modules.agentic_model import AgenticModel
-        st.markdown("### 🧠 Agentic(LLS)")
+        st.markdown("### 🧠 Agentic")
 
         # Immediately configure without needing key
         st.session_state.ai = AgenticModel()
@@ -430,9 +442,9 @@ if st.session_state.backend_configured:
                 cmd += [git_url, temp_dir]
                 subprocess.check_call(cmd)
                 st.session_state.cloned_repo_path = temp_dir
-                st.session_state.clone_status = f"✅ Cloned: {git_url}"
+                st.session_state.clone_status = f" Cloned: {git_url}"
             except Exception as e:
-                st.session_state.clone_status = f"❌ Clone failed: {e}"
+                st.session_state.clone_status = f" Clone failed: {e}"
 
         st.sidebar.markdown("📜 Clone Status")
         st.sidebar.code(st.session_state.clone_status or "No repo cloned yet.")
@@ -497,14 +509,14 @@ if st.session_state.get("conversion_triggered", False) and st.session_state.file
                 summary_text += chunk
             st.session_state.analysis_results[filename] = summary_text
         except Exception as e:
-            summary_text = f"❌ Analysis failed: {e}"
+            summary_text = f" Analysis failed: {e}"
 
         try:
             for chunk in st.session_state.ai.transform(code, mode="convert", stream_ui=True):
                 playbook_text += chunk
             st.session_state.playbook_results[filename] = playbook_text
         except Exception as e:
-            playbook_text = f"❌ Conversion failed: {e}"
+            playbook_text = f" Conversion failed: {e}"
 
         col1, col2 = st.columns(2, gap="large")
 
@@ -523,7 +535,7 @@ if st.session_state.get("conversion_triggered", False) and st.session_state.file
     if st.session_state.conversion_complete:
         if "progress_bar" in locals():
             progress_bar.progress(1.0)
-        st.success(f"✅ Conversion complete. Files saved to: {st.session_state.output_folder}")
+        st.success(f" Conversion complete. Files saved to: {st.session_state.output_folder}")
 
 
         with st.expander("📥 Download Generated Files", expanded=True):

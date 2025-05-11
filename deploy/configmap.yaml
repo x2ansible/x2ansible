@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agentic-config
+data:
+  config.yaml: |
+    llama_stack:
+      base_url: "http://host.containers.internal:8321"
+      model: "llama3.2:3b"
+    vector_db:
+      id: "iac"
+      embedding_model: "all-MiniLM-L6-v2"
+      embedding_dim: 384
+      chunk_size: 512
+    docs_folder: "docs"
+    logging:
+      log_dir: "/tmp/logs"
+      file: "agentic_model.log"
+      app_log: "app.log"
+      level: INFO
