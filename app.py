@@ -2,7 +2,6 @@ import os
 import time
 import yaml
 import shutil
-import logging
 import tempfile
 import subprocess
 from configparser import ConfigParser
@@ -536,6 +535,9 @@ if st.session_state.get("conversion_triggered", False) and st.session_state.file
         if "progress_bar" in locals():
             progress_bar.progress(1.0)
         st.success(f" Conversion complete. Files saved to: {st.session_state.output_folder}")
+         
+        #  Prevent unintended re-runs on file select
+        st.session_state.conversion_triggered = False
 
 
         with st.expander("📥 Download Generated Files", expanded=True):
