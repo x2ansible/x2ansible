@@ -5,6 +5,81 @@ built using **LlamaStack** .
 
 This project uses a **Llama-stack server**, **Ollama/vllm served LLM**, and a **Streamlit UI** to streamline Infrastructure-as-Code modernization.
 
+The AgenticModel code uses two specialized agents that work together in sequence. 
+
+1. RAG Agent (Retrieval Agent)
+This agent's job is to search the vector database for relevant documentation about infrastructure-as-code:
+```
+pythonrag_agent = Agent(
+    self.client,
+    model=self.model,
+    instructions="Use the RAG tool to fetch IaC-related context.",
+    tools=[{
+        "name": "builtin::rag/knowledge_search",
+        "args": {
+            "vector_db_ids": [self.vector_db],
+            "top_k": 5
+        }
+    }],
+)
+```
+How it works:
+
+It's initialized with the LlamaStack client and the configured model
+It's given specific instructions to fetch IaC-related context
+It's equipped with the builtin::rag/knowledge_search tool
+This tool is configured to:
+
+* Search the vector database specified in the config
+* Return the top 5 most relevant document chunks
+
+The agent then:
+
+* Creates a session named "enrich"
+* Sends a query "Infrastructure-as-code resource definition"
+* The query is processed by the LLM, which uses the RAG tool
+* The tool searches the vector database using semantic similarity
+* The results are extracted from the tool response
+
+This agent essentially acts as the "memory" of the system, retrieving contextual information that helps with accurate code conversion.
+
+2. Generator Agent (Output Agent)
+This agent takes the context from the RAG agent plus the input code and produces the final output:
+```
+pythongenerator_agent = Agent(
+    self.client,
+    model=self.model,
+    instructions="You generate playbooks or explain IaC code using helpful context.",
+)
+```
+How it works:
+
+Uses the same client and model as the RAG agent
+Has simpler instructions focused on generation
+Doesn't use any tools - it just generates content
+Receives a detailed prompt based on the selected mode:
+
+In "analyze" mode:
+
+The prompt asks for a plain English explanation of the code
+No context from the RAG agent is included (simpler task)
+
+In "convert" mode:
+
+The prompt includes the original code
+It incorporates the context retrieved by the RAG agent
+It provides detailed formatting rules for the Ansible output
+These rules ensure the output follows best practices
+
+The generator agent:
+
+Creates a session with a dynamic ID based on the mode
+Processes the detailed prompt with the LLM
+Can stream the output in real-time if requested
+Returns the final generated content
+
+This two-agent architecture separates the knowledge retrieval from the generation, allowing each part to focus on its specific task while working together to produce high-quality results.
+
 ---
 
 ## 🚀 What This Solution Does ?
