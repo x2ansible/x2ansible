@@ -3,6 +3,57 @@
 Welcome to **x2ansible** — an agentic approach to **analyze** and **convert** Chef recipes or Puppet manifests into clean, production-ready **Ansible Playbooks**,  
 built using **LlamaStack** .
 
+## Workflow & Agent Architecture
+
+### 🔹 Workflow
+
+The x2ansible solution implements a clearly defined workflow for modernizing infrastructure-as-code by converting Chef recipes and Puppet manifests into Ansible Playbooks. This workflow consists of several structured phases:
+
+1. **Input Processing**: The workflow begins with accepting Chef/Puppet code through multiple channels (upload, browse, or Git-clone).
+
+2. **Context Enrichment**: The system retrieves relevant best practices and documentation from a vector database.
+
+3. **Code Analysis/Conversion**: Based on the retrieved context and input code, the system either explains the code in plain English or converts it to Ansible format.
+
+4. **Output Generation**: The workflow delivers the final results in real-time through a split-view interface for immediate feedback.
+
+This workflow is explicitly structured to guide the decision-making process from legacy infrastructure code to modern, production-ready Ansible Playbooks.
+
+### 🔹 Agents
+
+x2ansible utilizes a dual-agent architecture where each agent has specialized capabilities and clear objectives:
+
+1. **RAG Agent (Retrieval Agent)**
+   * **Goal-directed**: Specifically tasked with searching the vector database for relevant infrastructure-as-code documentation.
+   * **Specialized capability**: Utilizes the `builtin::rag/knowledge_search` tool to fetch context from a vector database.
+   * **Autonomous operation**: Independently creates a session, formulates a query, and retrieves the top 5 most relevant document chunks.
+   * **Auditable**: Results are extracted from the tool response and can be traced back to their source.
+
+2. **Generator Agent (Output Agent)**
+   * **Goal-directed**: Focused on producing either explanations or conversion outputs based on input code and context.
+   * **Specialized capability**: Processes complex infrastructure code and generates human-readable explanations or syntactically correct Ansible Playbooks.
+   * **Composable**: Works seamlessly with the RAG agent by incorporating the retrieved context into its generation process.
+   * **Autonomous operation**: Creates dynamic sessions based on the selected mode and processes detailed prompts without human intervention.
+   * **Auditable**: Streams output in real-time, allowing for immediate verification and tracing of its reasoning.
+
+## Implementation Benefits
+
+This agentic workflow approach delivers several key advantages:
+
+1. **Separation of Concerns**: By dividing responsibilities between knowledge retrieval and content generation, each agent can excel at its specific task.
+
+2. **Context-Aware Conversion**: The RAG agent ensures that generated Ansible code follows best practices by providing relevant documentation.
+
+3. **Flexibility**: The system can switch between explanation and conversion modes while using the same underlying agent architecture.
+
+4. **Scalability**: The modular design allows for processing multiple files and handling different infrastructure code formats.
+
+5. **Transparency**: Real-time streaming output provides visibility into the conversion process, building trust with users.
+
+By leveraging this structured workflow with specialized agents, x2ansible demonstrates how complex infrastructure modernization tasks can be automated effectively while maintaining high quality and adherence to best practices.
+
+
+
 This project uses a **Llama-stack server**, **Ollama/vllm served LLM**, and a **Streamlit UI** to streamline Infrastructure-as-Code modernization.
 
 The AgenticModel code uses two specialized agents that work together in sequence. 
