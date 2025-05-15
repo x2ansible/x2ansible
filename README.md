@@ -1,4 +1,4 @@
-# x2ansible - Convert Chef/Puppet to Ansible Playbooks using LlamaStack Agents (RAG-powered)
+# x2ansible - Convert Chef/Puppet to Ansible Playbooks using LlamaStack Agents (RAG-powered) [WIP]
 
 Welcome to **x2ansible** — an agentic approach to **analyze** and **convert** Chef recipes or Puppet manifests into clean, production-ready **Ansible Playbooks**,  
 built using **LlamaStack** .
