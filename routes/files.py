@@ -1,4 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, Form
+# routes/files.py
+
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 from typing import List, Dict, Union
 import os
@@ -8,62 +10,79 @@ router = APIRouter()
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+
 @router.post("/files/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
-    saved = []
+    saved: List[str] = []
     for file in files:
         dest_path = os.path.join(UPLOAD_DIR, file.filename)
+        content = await file.read()
         with open(dest_path, "wb") as f:
-            content = await file.read()
             f.write(content)
         saved.append(file.filename)
     return {"saved_files": saved}
 
+
 @router.get("/files/list")
 async def list_folders():
     entries = os.listdir(UPLOAD_DIR)
-    folders = [entry for entry in entries if os.path.isdir(os.path.join(UPLOAD_DIR, entry))]
-    has_root_files = any(os.path.isfile(os.path.join(UPLOAD_DIR, f)) for f in entries)
-    if has_root_files:
-        folders.insert(0, "__ROOT__")
+
+    # skip any directory that contains its own .git (i.e. a cloned repo)
+    dirs = [
+        e for e in entries
+        if os.path.isdir(os.path.join(UPLOAD_DIR, e))
+        and not os.path.isdir(os.path.join(UPLOAD_DIR, e, ".git"))
+    ]
+
+    # always expose __ROOT__ so "Select Existing" never goes blank
+    folders = ["__ROOT__"] + dirs
     return {"folders": folders}
+
 
 @router.get("/files/{folder}/list")
 async def list_files_in_folder(folder: str):
-    target_dir = UPLOAD_DIR if folder == "__ROOT__" else os.path.join(UPLOAD_DIR, folder)
-    if not os.path.exists(target_dir):
+    target = UPLOAD_DIR if folder == "__ROOT__" else os.path.join(UPLOAD_DIR, folder)
+    if not os.path.exists(target):
         return JSONResponse(status_code=404, content={"error": "Folder not found"})
-    files = [f for f in os.listdir(target_dir) if os.path.isfile(os.path.join(target_dir, f))]
+    files = [
+        f for f in os.listdir(target)
+        if os.path.isfile(os.path.join(target, f))
+    ]
     return {"files": files}
 
+
 @router.get("/files/tree")
-def get_file_tree(path: str = "") -> Dict[str, Union[str, list]]:
-    root_path = os.path.join(UPLOAD_DIR, path)
-    if not os.path.exists(root_path):
+async def get_file_tree(path: str = "") -> Dict[str, Union[str, list]]:
+    root = os.path.join(UPLOAD_DIR, path)
+    if not os.path.exists(root):
         return JSONResponse(status_code=404, content={"error": "Path not found"})
 
-    tree = []
-    for entry in os.listdir(root_path):
-        full_path = os.path.join(root_path, entry)
-        if os.path.isdir(full_path):
-            tree.append({"type": "folder", "name": entry})
-        elif os.path.isfile(full_path):
-            tree.append({"type": "file", "name": entry})
-    return {"path": path, "items": tree}
+    def list_dir(folder):
+        items = []
+        for entry in os.listdir(folder):
+            full = os.path.join(folder, entry)
+            rel  = os.path.relpath(full, UPLOAD_DIR)
+            if os.path.isdir(full):
+                items.append({"type": "folder", "name": entry, "path": rel})
+            elif os.path.isfile(full) and entry.lower().endswith(
+                (".yml", ".yaml", ".rb", ".pp", ".json", ".tf")
+            ):
+                items.append({"type": "file", "name": entry, "path": rel})
+        return items
+
+    return {"path": path, "items": list_dir(root)}
+
 
 @router.post("/files/clone")
 async def clone_repo(url: str = Form(...)):
-    repo_name = url.split("/")[-1].replace(".git", "")
+    repo_name = url.rstrip("/").split("/")[-1].removesuffix(".git")
     target_dir = os.path.join(UPLOAD_DIR, repo_name)
 
-    # Return existing contents if already cloned
-    if os.path.exists(target_dir):
-        files = os.listdir(target_dir)
-        return {"cloned": repo_name, "files": files}
+    if os.path.isdir(target_dir):
+        return {"cloned": repo_name}
 
     try:
         subprocess.run(["git", "clone", url, target_dir], check=True)
-        files = os.listdir(target_dir)
-        return {"cloned": repo_name, "files": files}
+        return {"cloned": repo_name}
     except subprocess.CalledProcessError as e:
-        return JSONResponse(status_code=500, content={"error": f"Clone failed: {str(e)}"})
+        raise HTTPException(status_code=500, detail=f"Clone failed: {e}")

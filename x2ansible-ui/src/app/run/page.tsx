@@ -1,264 +1,598 @@
+// src/app/run/page.tsx
 "use client";
 
 import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+// === Backend origin for static file fetches ===
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
 const steps = ["Classify", "Context", "Convert", "Validate", "Deploy"];
+
+interface ClassificationResponse { classification: string; error?: string }
+interface FileUploadResponse    { saved_files: string[]; error?: string }
+interface FileListResponse      { folders?: string[]; files?: string[]; error?: string }
+interface CloneResponse         { cloned?: string; error?: string }
 
 export default function RunWorkflowPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [step, setStep] = useState(0);
-  const [code, setCode] = useState<string>("");
-  const [classification, setClassification] = useState<string>("");
-  const [logMessages, setLogMessages] = useState<string[]>([]);
+  // ─── State ────────────────────────────────────────────────────────────────
+  const [step, setStep]                 = useState(0);
+  const [sourceType, setSourceType]     = useState<"upload"|"existing"|"git">("upload");
+  const [uploadKey, setUploadKey]       = useState(Date.now());
+  const [gitUrl, setGitUrl]             = useState("");
+
+  const [code, setCode]                 = useState("");
+  const [loading, setLoading]           = useState(false);
+  const [classificationResult, setClassificationResult] = useState("");
+  const [logMessages, setLogMessages]   = useState<string[]>([]);
   const [sidebarMessages, setSidebarMessages] = useState<string[]>([]);
-  const [uploadKey, setUploadKey] = useState(Date.now());
 
-  const [sourceType, setSourceType] = useState<string>("upload");
-  const [gitUrl, setGitUrl] = useState<string>("");
+  const [folderList, setFolderList]     = useState<string[]>([]);
+  const [fileList, setFileList]         = useState<string[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState("");
+  const [selectedFile, setSelectedFile]     = useState("");
 
-  const [treePath, setTreePath] = useState<string>("");
-  const [treeItems, setTreeItems] = useState<{ type: string; name: string }[]>([]);
-  const [selectedFile, setSelectedFile] = useState<string>("");
+  const [gitRepoName, setGitRepoName]   = useState("");
+  const [gitFolderList, setGitFolderList] = useState<string[]>([]);
+  const [gitFileList, setGitFileList]   = useState<string[]>([]);
+  const [selectedGitFolder, setSelectedGitFolder] = useState("");
+  const [selectedGitFile, setSelectedGitFile]     = useState("");
 
-  const [showRedirectNotice, setShowRedirectNotice] = useState(false);
-
+  // ─── Effects ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (status === "unauthenticated") {
-      setShowRedirectNotice(true);
-      setTimeout(() => router.replace("/"), 2000);
+      const t = setTimeout(() => router.replace("/"), 2000);
+      return () => clearTimeout(t);
     }
   }, [status, router]);
 
   useEffect(() => {
-    if (sourceType === "browse") fetchTree("");
-  }, [sourceType]);
+    if (sourceType === "existing") {
+      fetchFolders();
+    }
+  }, [sourceType, gitRepoName]);
 
-  const fetchTree = async (subPath: string) => {
-    const res = await fetch(`http://localhost:8000/api/files/tree?path=${subPath}`);
-    const data = await res.json();
-    setTreePath(subPath);
-    setTreeItems(data.items || []);
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  const apiCall = async (url: string, opts: RequestInit = {}) => {
+    const resp = await fetch(url, {
+      ...opts,
+      headers: { "Content-Type": "application/json", ...opts.headers },
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    return resp.json();
   };
 
-  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length) return;
+  const addLog = (msg: string) =>
+    setLogMessages(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  // ← alias so old calls to addLogMessage still work
+  const addLogMessage = addLog;
 
-    const formData = new FormData();
-    for (const file of files) formData.append("files", file);
+  const addSidebarMessage = (msg: string) =>
+    setSidebarMessages(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
 
-    const res = await fetch("http://localhost:8000/api/files/upload", {
-      method: "POST",
-      body: formData,
+  const readFileAsText = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e =>
+        typeof e.target?.result === "string"
+          ? resolve(e.target.result)
+          : reject(new Error("Result not string"));
+      reader.onerror = () => reject(new Error(reader.error?.message || "FileReader error"));
+      reader.onabort = () => reject(new Error("File reading aborted"));
+
+      if (file.size === 0) return reject(new Error("File is empty"));
+      if (file.size > 10 * 1024 * 1024) return reject(new Error("File too large (>10MB)"));
+
+      reader.readAsText(file, "UTF-8");
     });
 
-    const data = await res.json();
-    setSidebarMessages(prev => [...prev, `Uploaded: ${data.saved_files.join(", ")}`]);
-
-    const reader = new FileReader();
-    reader.onload = () => setCode(reader.result as string);
-    reader.readAsText(files[0]);
-
-    // Refresh file input
-    setUploadKey(Date.now());
+  // ─── Classification ─────────────────────────────────────────────────────────
+  const classifyCode = async (input: string) => {
+    if (!input.trim()) {
+      addLog("⚠️ No code content to classify");
+      return;
+    }
+    setLoading(true);
+    addLog("🧠 Classifier agent starting...");
+    try {
+      const data: ClassificationResponse = await apiCall(
+        `${BACKEND_URL}/api/classify`,
+        { method: "POST", body: JSON.stringify({ code: input }) }
+      );
+      if (data.error) throw new Error(data.error);
+      setClassificationResult(data.classification);
+      addLog("✅ Classification completed successfully");
+      if (step === 0) setStep(1);
+    } catch (error) {
+      addLog(`❌ Classification failed: ${(error as Error).message}`);
+      setClassificationResult("");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const handleManualClassify = () => {
+    if (loading) {
+      addLog("⚠️ Classification already in progress");
+      return;
+    }
+    if (!code.trim()) {
+      addLog("⚠️ No code loaded. Please select or upload a file first");
+      return;
+    }
+    classifyCode(code);
+  };
+
+  // ─── File Upload ─────────────────────────────────────────────────────────────
+  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (loading) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    addLogMessage(`📁 Processing file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+    try {
+      addLogMessage("📖 Reading file content...");
+      const content = await readFileAsText(file);
+      setCode(content);
+      setSelectedFile(file.name);
+
+      addLogMessage("⬆️ Uploading file to server...");
+      const formData = new FormData();
+      formData.append("files", file);
+
+      const resp = await fetch(`${BACKEND_URL}/api/files/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!resp.ok) throw new Error(`Server upload failed: ${resp.status}`);
+
+      const data: FileUploadResponse = await resp.json();
+      if (data.error) throw new Error(`Server error: ${data.error}`);
+
+      addSidebarMessage(`✅ File uploaded successfully: ${data.saved_files.join(", ")}`);
+      // auto-classify removed
+    } catch (error) {
+      addLogMessage(`❌ File processing failed: ${(error as Error).message}`);
+      setCode("");
+      setSelectedFile("");
+    } finally {
+      setUploadKey(Date.now());
+    }
+  };
+
+  // ─── Select Existing ─────────────────────────────────────────────────────────
+const fetchFolders = async () => {
+  try {
+    addLogMessage("📂 Fetching available folders...");
+    const data: FileListResponse = await apiCall(`${BACKEND_URL}/api/files/list`);
+    if (data.error) throw new Error(data.error);
+
+    // API already includes "__ROOT__"
+    // just filter out the cloned repo, and dedupe in case
+    const unique = Array.from(
+      new Set(
+        data.folders!
+          .filter(folder => folder !== gitRepoName)
+      )
+    );
+
+    setFolderList(unique);
+    addLogMessage(`📂 Found ${unique.length} folders`);
+  } catch (error) {
+    addLogMessage(`❌ ${(error as Error).message}`);
+  }
+};
+
+  const fetchFilesInFolder = async (folder: string) => {
+    try {
+      addLogMessage(`📄 Fetching files in folder: ${folder}`);
+      const data: FileListResponse = await apiCall(
+        `${BACKEND_URL}/api/files/${encodeURIComponent(folder)}/list`
+      );
+      if (data.error) throw new Error(data.error);
+      setFileList(data.files || []);
+      addLogMessage(`📄 Found ${data.files?.length || 0} files`);
+    } catch (error) {
+      addLogMessage(`❌ ${(error as Error).message}`);
+    }
+  };
+
+  const fetchFileContent = async (folder: string, file: string) => {
+    if (loading) return;
+
+    try {
+      setLoading(true);
+      const rawPath = folder === "__ROOT__" ? file : `${folder}/${file}`;
+      const safePath = rawPath.split("/").map(encodeURIComponent).join("/");
+      addLogMessage(`📖 Loading file: ${rawPath}`);
+
+      const resp = await fetch(`${BACKEND_URL}/uploads/${safePath}`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const text = await resp.text();
+
+      setCode(text);
+      setSelectedFile(file);
+      addLogMessage(`✅ File loaded: ${text.length} characters`);
+    } catch (error) {
+      addLogMessage(`❌ ${(error as Error).message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Git Clone ───────────────────────────────────────────────────────────────
   const handleCloneRepo = async (e: FormEvent) => {
     e.preventDefault();
-    const formData = new FormData();
-    formData.append("url", gitUrl);
-
-    const res = await fetch("http://localhost:8000/api/files/clone", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await res.json();
-    if (data.cloned) {
-      setSidebarMessages(prev => [...prev, `Cloned repo: ${data.cloned}`]);
-      fetchTree(data.cloned); // go into repo
-    } else {
-      setSidebarMessages(prev => [...prev, `Clone failed: ${data.error || "unknown error"}`]);
+    if (!gitUrl.trim()) {
+      addSidebarMessage("⚠️ Please enter a Git URL");
+      return;
     }
-  };
 
-  const handleClassify = async () => {
-    setLogMessages(["🧠 Classifier agent running..."]);
     try {
-      const response = await fetch("http://localhost:8000/api/classify", {
+      addSidebarMessage(`🔄 Cloning repository: ${gitUrl}`);
+      const formData = new FormData();
+      formData.append("url", gitUrl);
+
+      const resp = await fetch(`${BACKEND_URL}/api/files/clone`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: formData,
       });
-      const data = await response.json();
-      setClassification(data.classification);
-      setLogMessages(prev => [...prev, "✅ Classification complete."]);
-    } catch {
-      setLogMessages(prev => [...prev, "❌ Error contacting classifier endpoint."]);
+      if (!resp.ok) throw new Error(`Clone failed: ${resp.statusText}`);
+
+      const data: CloneResponse = await resp.json();
+      if (data.error) throw new Error(data.error);
+
+      setGitRepoName(data.cloned!);
+      addSidebarMessage(`✅ Repository cloned: ${data.cloned}`);
+      await fetchGitFolders(data.cloned!);
+    } catch (error) {
+      addSidebarMessage(`❌ ${(error as Error).message}`);
     }
   };
 
-  const loadFile = async (filePath: string) => {
-    fetch(`uploads/${filePath}`)
-      .then(res => res.text())
-      .then(setCode)
-      .catch(() => setCode(""));
+  // ─── UPDATED: fetchGitFolders via /api/files/tree ───────────────────────────
+  const fetchGitFolders = async (repo: string) => {
+    try {
+      addLogMessage(`📂 Fetching folders in repository: ${repo}`);
+      const result = await apiCall(
+        `${BACKEND_URL}/api/files/tree?path=${encodeURIComponent(repo)}`
+      );
+      const items: { type: string; name: string }[] = result.items;
+      const folders = items.filter(i => i.type === "folder").map(i => i.name);
+      setGitFolderList(folders);
+      addLogMessage(`📂 Found ${folders.length} folders in repository`);
+    } catch (error) {
+      addLogMessage(`❌ ${(error as Error).message}`);
+    }
   };
 
-  const handlePathClick = (sub: string) => {
-    const newPath = treePath ? `${treePath}/${sub}` : sub;
-    fetchTree(newPath);
+  // ─── UPDATED: fetchGitFiles via /api/files/tree ─────────────────────────────
+  const fetchGitFiles = async (repo: string, folder: string) => {
+    try {
+      addLogMessage(`📄 Fetching files in ${repo}/${folder}`);
+      const fullPath = `${repo}/${folder}`;
+      const result = await apiCall(
+        `${BACKEND_URL}/api/files/tree?path=${encodeURIComponent(fullPath)}`
+      );
+      const items: { type: string; name: string }[] = result.items;
+      const files = items.filter(i => i.type === "file").map(i => i.name);
+      setGitFileList(files);
+      addLogMessage(`📄 Found ${files.length} files`);
+    } catch (error) {
+      addLogMessage(`❌ ${(error as Error).message}`);
+    }
   };
 
-  if (status === "loading") return <div className="p-8">Checking session...</div>;
+  const fetchGitFileContent = async (repo: string, folder: string, file: string) => {
+    if (loading) return;
 
-  if (showRedirectNotice) {
+    try {
+      setLoading(true);
+      const rawPath = `${repo}/${folder}/${file}`;
+      const safePath = rawPath.split("/").map(encodeURIComponent).join("/");
+      addLogMessage(`📖 Loading Git file: ${rawPath}`);
+
+      const resp = await fetch(`${BACKEND_URL}/uploads/${safePath}`);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const text = await resp.text();
+
+      setCode(text);
+      setSelectedGitFile(file);
+      addLogMessage(`✅ Git file loaded: ${text.length} characters`);
+    } catch (error) {
+      addLogMessage(`❌ ${(error as Error).message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Render guards ─────────────────────────────────────────────────────────
+  if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white text-center">
-        <div className="p-6 text-lg bg-red-700 rounded shadow">
-          🔒 You must be signed in to access this page.<br />
-          Redirecting...
+      <div className="min-h-screen bg-[--background] text-[--foreground] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
+  if (status === "unauthenticated") {
+    return (
+      <div className="min-h-screen bg-[--background] text-[--foreground] flex items-center justify-center">
+        <div className="text-center">
+          <p className="mb-4">🔒 Please log in to access this page</p>
+          <p className="text-sm text-gray-500">Redirecting to login...</p>
         </div>
       </div>
     );
   }
 
+  // ─── Main Render ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[--background] text-[--foreground] p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">🚀 Try This Workflow</h1>
-        <button onClick={() => signOut({ callbackUrl: "/" })} className="bg-red-600 text-white px-4 py-2 rounded">
-          🔒 Sign out
-        </button>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-500">
+            Welcome, {session?.user?.name || session?.user?.email}
+          </span>
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors"
+          >
+            🔒 Sign out
+          </button>
+        </div>
       </div>
 
-      <div className="flex space-x-4 mb-6">
+      {/* Progress Steps */}
+      <div className="flex space-x-4 mb-6 overflow-x-auto">
         {steps.map((label, idx) => (
-          <div key={idx} className={`px-4 py-2 rounded-lg border text-sm font-medium transition ${
-            idx === step ? "bg-blue-600 text-white" :
-            idx < step ? "bg-green-100 text-green-700 border-green-300" : "bg-gray-100 text-gray-400 border-gray-200"
-          }`}>
-            {label}
+          <div
+            key={idx}
+            className={`px-4 py-2 rounded-lg border text-sm font-medium whitespace-nowrap transition-colors ${
+              idx === step
+                ? "bg-blue-600 text-white border-blue-600"
+                : idx < step
+                ? "bg-green-100 text-green-700 border-green-300"
+                : "bg-gray-100 text-gray-400 border-gray-300"
+            }`}
+          >
+            {idx + 1}. {label}
           </div>
         ))}
       </div>
 
       <div className="flex gap-4">
-        <aside className="w-1/4 bg-white dark:bg-neutral-900 p-4 rounded shadow h-fit">
-          <h3 className="font-semibold mb-2">Source</h3>
+        {/* Sidebar */}
+        <aside className="w-64 bg-white dark:bg-neutral-900 p-4 rounded shadow h-fit">
+          <h3 className="font-semibold mb-3 text-sm">Select Source</h3>
 
-          <select
-            value={sourceType}
-            onChange={(e) => setSourceType(e.target.value)}
-            className="w-full p-2 rounded border mb-4"
-          >
-            <option value="upload">Upload File</option>
-            <option value="browse">Browse Existing</option>
-            <option value="git">Clone from Git</option>
-          </select>
+          {/* Source Type */}
+          <div className="flex flex-col gap-2 mb-4">
+            {[
+              { key: "upload", label: "Upload File", icon: "📁" },
+              { key: "existing", label: "Select Existing", icon: "📂" },
+              { key: "git", label: "Clone from Git", icon: "🔗" },
+            ].map(({ key, label, icon }) => (
+              <button
+                key={key}
+                disabled={loading}
+                className={`px-3 py-2 text-sm rounded font-medium transition-colors disabled:opacity-50 ${
+                  sourceType === key
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 dark:bg-neutral-800 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-neutral-700"
+                }`}
+                onClick={() => setSourceType(key)}
+              >
+                {icon} {label}
+              </button>
+            ))}
+          </div>
 
+          {/* Upload Section */}
           {sourceType === "upload" && (
-            <input key={uploadKey} type="file" onChange={handleUpload} className="mb-2" />
+            <label className="block bg-blue-600 hover:bg-blue-700 text-white text-sm text-center py-2 rounded cursor-pointer transition-colors">
+              📁 Choose File
+              <input
+                key={uploadKey}
+                type="file"
+                onChange={handleUpload}
+                className="hidden"
+                disabled={loading}
+                accept="*/*"
+              />
+            </label>
           )}
 
-          {sourceType === "browse" && (
+          {/* Existing Section */}
+          {sourceType === "existing" && (
             <>
-              <div className="space-y-1 mb-2">
-                {treeItems.map((item, i) =>
-                  item.type === "folder" ? (
-                    <div key={i} className="cursor-pointer text-blue-500 hover:underline" onClick={() => handlePathClick(item.name)}>
-                      📁 {item.name}
-                    </div>
-                  ) : (
-                    <div key={i} className="cursor-pointer text-gray-700 hover:underline" onClick={() => {
-                      setSelectedFile(treePath ? `${treePath}/${item.name}` : item.name);
-                      loadFile(treePath ? `${treePath}/${item.name}` : item.name);
-                    }}>
-                      📄 {item.name}
-                    </div>
-                  )
-                )}
-              </div>
-              {treePath && (
-                <div className="text-xs text-gray-400 mb-2">Path: {treePath}</div>
+              <select
+                disabled={loading}
+                className="w-full p-2 rounded border text-sm mb-2 disabled:opacity-50"
+                value={selectedFolder}
+                onChange={(e) => {
+                  setSelectedFolder(e.target.value);
+                  setSelectedFile("");
+                  if (e.target.value) fetchFilesInFolder(e.target.value);
+                }}
+              >
+                <option value="">-- Select Folder --</option>
+                {folderList.map((f, i) => (
+                  <option key={i} value={f}>
+                    {f === "__ROOT__" ? "📁 uploads/" : `📁 ${f}`}
+                  </option>
+                ))}
+              </select>
+              {selectedFolder && (
+                <select
+                  disabled={loading}
+                  className="w-full p-2 rounded border text-sm disabled:opacity-50"
+                  value={selectedFile}
+                  onChange={(e) => {
+                    if (e.target.value) fetchFileContent(selectedFolder, e.target.value);
+                  }}
+                >
+                  <option value="">-- Select File --</option>
+                  {fileList.map((f, i) => (
+                    <option key={i} value={f}>
+                      📄 {f}
+                    </option>
+                  ))}
+                </select>
               )}
             </>
           )}
 
+          {/* Git Section */}
           {sourceType === "git" && (
-            <form onSubmit={handleCloneRepo} className="flex flex-col gap-2">
-              <input
-                type="text"
-                value={gitUrl}
-                onChange={(e) => setGitUrl(e.target.value)}
-                placeholder="https://github.com/..."
-                className="p-2 border rounded"
-              />
-              <button type="submit" className="bg-blue-600 text-white px-4 py-1 rounded">
-                Clone
-              </button>
-            </form>
+            <>
+              <form onSubmit={handleCloneRepo} className="space-y-2 mb-3">
+                <input
+                  type="url"
+                  value={gitUrl}
+                  onChange={(e) => setGitUrl(e.target.value)}
+                  placeholder="https://github.com/user/repo.git"
+                  className="w-full p-2 border rounded text-sm"
+                  disabled={loading}
+                />
+                <button
+                  disabled={loading || !gitUrl.trim()}
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm transition-colors disabled:opacity-50"
+                >
+                  {loading ? "⏳ Cloning..." : "🔗 Clone Repository"}
+                </button>
+              </form>
+
+              {gitRepoName && (
+                <>
+                  <select
+                    disabled={loading}
+                    className="w-full p-2 rounded border text-sm mb-2 disabled:opacity-50"
+                    value={selectedGitFolder}
+                    onChange={(e) => {
+                      setSelectedGitFolder(e.target.value);
+                      setSelectedGitFile("");
+                      if (e.target.value) fetchGitFiles(gitRepoName, e.target.value);
+                    }}
+                  >
+                    <option value="">-- Select Folder --</option>
+                    {gitFolderList.map((f, i) => (
+                      <option key={i} value={f}>
+                        📁 {f}
+                      </option>
+                    ))}
+                  </select>
+
+                  {selectedGitFolder && (
+                    <select
+                      disabled={loading}
+                      className="w-full p-2 rounded border text-sm disabled:opacity-50"
+                      value={selectedGitFile}
+                      onChange={(e) => {
+                        if (e.target.value)
+                          fetchGitFileContent(gitRepoName, selectedGitFolder, e.target.value);
+                      }}
+                    >
+                      <option value="">-- Select File --</option>
+                      {gitFileList.map((f, i) => (
+                        <option key={i} value={f}>
+                          📄 {f}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </>
+              )}
+            </>
           )}
 
-          {sidebarMessages.length > 0 && (
-            <div className="mt-4 text-sm text-gray-600 dark:text-gray-300 space-y-1">
-              {sidebarMessages.map((msg, i) => <div key={i}>• {msg}</div>)}
+          {/* Manual Classification Button */}
+          <button
+            onClick={handleManualClassify}
+            disabled={loading || !code.trim()}
+            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm transition-colors disabled:opacity-50"
+          >
+            {loading ? "⏳ Classifying..." : "🔍 Classify Code"}
+          </button>
+
+          {/* Status Display */}
+          {code && (
+            <div className="mt-3 p-2 bg-gray-100 dark:bg-neutral-800 rounded text-xs">
+              <div>📄 File: {selectedFile || selectedGitFile || "Uploaded"}</div>
+              <div>📊 Size: {code.length} characters</div>
+              <div>🏷️ Lines: {code.split("\n").length}</div>
             </div>
           )}
         </aside>
 
-        <main className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-neutral-900 p-4 rounded shadow">
-            <h2 className="text-lg font-semibold mb-2">{`Step ${step + 1}: ${steps[step]}`}</h2>
+        {/* Main Content */}
+        <main className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 h-[75vh]">
+          {/* Classification Result Panel */}
+          <div className="bg-white dark:bg-neutral-900 p-4 rounded shadow overflow-auto">
+            <h2 className="text-lg font-semibold mb-1">🧾 Classification Result</h2>
+            <p className="text-sm text-gray-500 mb-2">
+              <strong>File:</strong> {selectedFile || selectedGitFile || "No file selected"}
+            </p>
 
-            <textarea
-              className="w-full h-48 p-2 border border-gray-300 rounded bg-gray-50 dark:bg-neutral-800 dark:text-white mb-4"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="Paste or load your code here..."
-            />
-            <button onClick={handleClassify} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-              🔍 Classify Code
-            </button>
-
-            {classification && (
-              <div className="mt-4">
-                <h3 className="font-semibold text-lg mb-2 text-blue-700 dark:text-blue-400">🧾 Classification Summary</h3>
-                <div className="bg-gray-50 dark:bg-neutral-800 text-sm text-gray-800 dark:text-gray-100 p-4 rounded whitespace-pre-wrap border border-gray-300 dark:border-neutral-700 max-h-64 overflow-auto">
-                  {classification}
-                </div>
+            {loading && step === 0 && (
+              <div className="flex items-center gap-2 mb-4">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm text-gray-500">Analyzing code...</span>
               </div>
             )}
+
+            <div className="bg-gray-50 dark:bg-neutral-800 p-3 rounded">
+              <pre className="whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200">
+                {classificationResult ||
+                  (code
+                    ? "Click 'Classify Code' to analyze the selected file."
+                    : "← Upload or select a file to classify.")}
+              </pre>
+            </div>
           </div>
 
-          <div className="bg-white dark:bg-neutral-900 p-4 rounded shadow overflow-y-auto max-h-96">
-            <h2 className="text-lg font-semibold mb-2">📟 Agent Log</h2>
-            <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 font-mono">
-              {logMessages.map((log, i) => <div key={i}>• {log}</div>)}
+          {/* Agent Log Panel */}
+          <div className="bg-white dark:bg-neutral-900 p-4 rounded shadow overflow-auto">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-semibold">📟 Agent Log</h2>
+              <button
+                onClick={() => setLogMessages([])}
+                className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300 font-mono max-h-96 overflow-y-auto">
+              {logMessages.length === 0 ? (
+                <div className="text-gray-400 italic">No log messages yet...</div>
+              ) : (
+                logMessages.map((log, i) => (
+                  <div key={i} className="break-words">
+                    • {log}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </main>
       </div>
 
-      <div className="mt-10 text-right">
-        {step < steps.length - 1 ? (
-          <button
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            onClick={() => {
-              setStep(step + 1);
-              setLogMessages([]);
-            }}
-          >
-            Next Step →
-          </button>
-        ) : (
-          <div className="text-green-600 font-semibold">✅ All steps complete!</div>
-        )}
-      </div>
+      {/* Sidebar Messages */}
+      {sidebarMessages.length > 0 && (
+        <div className="mt-4 bg-blue-50 dark:bg-blue-950 p-3 rounded">
+          <h4 className="font-medium text-sm mb-2">📢 System Messages</h4>
+          <div className="text-sm space-y-1">
+            {sidebarMessages.map((msg, i) => (
+              <div key={i}>• {msg}</div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

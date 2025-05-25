@@ -1,42 +1,43 @@
-# main.py
-
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+import yaml
+
 from agents.classifier_agent import ClassifierAgent
 from llama_stack_client import LlamaStackClient
 from routes.files import router as files_router
-import yaml
 
-# ───────────── Load config
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)
 
 llama_cfg = config["llama_stack"]
-client = LlamaStackClient(base_url=llama_cfg["base_url"])
+client     = LlamaStackClient(base_url=llama_cfg["base_url"])
 classifier = ClassifierAgent(client=client, model=llama_cfg["model"])
 
-# ───────────── FastAPI app
 app = FastAPI()
 
-# ───────────── CORS setup (allow frontend on port 3000)
+# serve uploads/ at /uploads/*
+app.mount("/uploads", StaticFiles(directory="uploads", html=False), name="uploads")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ───────────── API models
 class ClassifyRequest(BaseModel):
     code: str
 
-# ───────────── Endpoints
 @app.post("/api/classify")
 async def classify(req: ClassifyRequest):
-    result = classifier.classify(req.code)
-    return {"classification": result}
+    try:
+        result = classifier.classify(req.code)
+        return {"classification": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Include file management routes
 app.include_router(files_router, prefix="/api")
