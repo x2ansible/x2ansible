@@ -1,5 +1,5 @@
 llama_stack:
-  base_url: "http://host.containers.internal:8321"
+  base_url: "http://localhost:8321"
   model: "llama3.2:3b"
 
 vector_db:
@@ -9,6 +9,12 @@ vector_db:
   chunk_size: 512
 
 docs_folder: "docs"
+
+agent_endpoints:
+  classifier: "http://localhost:8000/api/classify"
+  context: "http://localhost:8000/api/context"
+  converter: "http://localhost:8000/api/convert"
+  validator: "http://localhost:8000/api/validate"
 
 logging:
   log_dir: "logs"

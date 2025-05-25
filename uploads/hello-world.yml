@@ -1,0 +1,55 @@
+---
+- name: Deploy Apache Web Server with Sample Website
+  hosts: webservers
+  become: true
+  vars:
+    apache_service: httpd
+    apache_packages:
+      - httpd
+      - mod_ssl
+    document_root: /var/www/html
+    index_file: index.html
+    index_content: |
+      <html>
+        <head><title>Welcome</title></head>
+        <body><h1>It works!</h1></body>
+      </html>
+    firewall_allowed_ports:
+      - 80
+      - 443
+
+  tasks:
+
+    - name: Install Apache and required packages
+      ansible.builtin.package:
+        name: "{{ apache_packages }}"
+        state: present
+
+    - name: Ensure Apache service is enabled and started
+      ansible.builtin.service:
+        name: "{{ apache_service }}"
+        state: started
+        enabled: true
+
+    - name: Deploy index.html with sample content
+      ansible.builtin.copy:
+        content: "{{ index_content }}"
+        dest: "{{ document_root }}/{{ index_file }}"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Configure firewall to allow HTTP and HTTPS
+      ansible.posix.firewalld:
+        port: "{{ item }}/tcp"
+        permanent: true
+        state: enabled
+        immediate: yes
+      loop: "{{ firewall_allowed_ports }}"
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Reload firewalld to apply changes
+      ansible.builtin.systemd:
+        name: firewalld
+        state: reloaded
+      when: ansible_facts['os_family'] == 'RedHat'
