@@ -1,12 +1,13 @@
 // tailwind.config.js
-/** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class', // ✅ REQUIRED for .dark class toggle to work!
   content: [
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}", // This covers everything in src
   ],
-  darkMode: 'media', // uses system dark mode preference
   theme: {
     extend: {},
   },
-  plugins: [],
+  plugins: [require("@tailwindcss/typography")],
 };

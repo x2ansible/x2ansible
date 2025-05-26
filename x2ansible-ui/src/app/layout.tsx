@@ -1,4 +1,4 @@
-// src/app/layout.tsx
+// src/app/layout.tsx - Simplified version for testing
 import "./globals.css";
 import type { Metadata } from "next";
 import Providers from "./providers";
