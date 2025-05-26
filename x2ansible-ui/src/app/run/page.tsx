@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import ContextPanel from "@/components/ContextPanel";
+import ContextSidebar from "@/components/ContextSidebar";   // <-- Add this if using ContextSidebar
 
 // Components: All business UI
 import WorkflowSidebar from "@/components/WorkflowSidebar";
@@ -22,6 +24,7 @@ import { ClassificationResponse } from "@/types/api";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 const steps = ["Analyze", "Context", "Convert", "Validate", "Deploy"];
+
 
 export default function RunWorkflowPage() {
   // --- Auth and Router ---
@@ -173,7 +176,7 @@ export default function RunWorkflowPage() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
       {/* Header: Unchanged, for branding and signout */}
       <div className="flex justify-between items-center mb-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🚀 Try This Workflow</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🚀 Convert to Ansible - Step by Step</h1>
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -208,60 +211,77 @@ export default function RunWorkflowPage() {
 
       {/* --- THE 3-PANEL LAYOUT --- */}
       <div className="x2a-3panel-layout">
-        {/* Left Panel: Source Selection / WorkflowSidebar */}
+        {/* Left Panel: Sidebar */}
         <div className="x2a-side-panel">
-          <WorkflowSidebar
-            currentStep={step}
-            sourceType={sourceType}
-            setSourceType={setSourceType}
-            loading={loading}
-            uploadKey={uploadKey}
-            handleUpload={handleUpload}
-            folderList={folderList}
-            selectedFolder={selectedFolder}
-            setSelectedFolder={setSelectedFolder}
-            selectedFile={selectedFile}
-            fileList={fileList}
-            fetchFilesInFolder={fetchFilesInFolder}
-            fetchFileContent={fetchFileContent}
-            gitUrl={gitUrl}
-            setGitUrl={setGitUrl}
-            handleCloneRepo={handleCloneRepo}
-            gitRepoName={gitRepoName}
-            gitFolderList={gitFolderList}
-            selectedGitFolder={selectedGitFolder}
-            setSelectedGitFolder={setSelectedGitFolder}
-            gitFileList={gitFileList}
-            selectedGitFile={selectedGitFile}
-            fetchGitFiles={fetchGitFiles}
-            fetchGitFileContent={fetchGitFileContent}
-            handleManualClassify={handleManualClassify}
-            code={code}
-            contextConfig={contextConfig}
-            setContextConfig={setContextConfig}
-            handleContextAnalysis={handleContextAnalysis}
-            conversionConfig={conversionConfig}
-            setConversionConfig={setConversionConfig}
-            handleConversion={handleConversion}
-            validationConfig={validationConfig}
-            setValidationConfig={setValidationConfig}
-            handleValidation={handleValidation}
-            deploymentConfig={deploymentConfig}
-            setDeploymentConfig={setDeploymentConfig}
-            handleDeployment={handleDeployment}
-          />
+          {step === 1 ? (
+            <ContextSidebar
+              vectorDbId="iac"
+              contextConfig={contextConfig}
+              setContextConfig={setContextConfig}
+              onDocUploaded={() => {}} // Optional: handle doc uploads if you want to refresh
+            />
+          ) : (
+            <WorkflowSidebar
+              currentStep={step}
+              sourceType={sourceType}
+              setSourceType={setSourceType}
+              loading={loading}
+              uploadKey={uploadKey}
+              handleUpload={handleUpload}
+              folderList={folderList}
+              selectedFolder={selectedFolder}
+              setSelectedFolder={setSelectedFolder}
+              selectedFile={selectedFile}
+              fileList={fileList}
+              fetchFilesInFolder={fetchFilesInFolder}
+              fetchFileContent={fetchFileContent}
+              gitUrl={gitUrl}
+              setGitUrl={setGitUrl}
+              handleCloneRepo={handleCloneRepo}
+              gitRepoName={gitRepoName}
+              gitFolderList={gitFolderList}
+              selectedGitFolder={selectedGitFolder}
+              setSelectedGitFolder={setSelectedGitFolder}
+              gitFileList={gitFileList}
+              selectedGitFile={selectedGitFile}
+              fetchGitFiles={fetchGitFiles}
+              fetchGitFileContent={fetchGitFileContent}
+              handleManualClassify={handleManualClassify}
+              code={code}
+              contextConfig={contextConfig}
+              setContextConfig={setContextConfig}
+              handleContextAnalysis={handleContextAnalysis}
+              conversionConfig={conversionConfig}
+              setConversionConfig={setConversionConfig}
+              handleConversion={handleConversion}
+              validationConfig={validationConfig}
+              setValidationConfig={setValidationConfig}
+              handleValidation={handleValidation}
+              deploymentConfig={deploymentConfig}
+              setDeploymentConfig={setDeploymentConfig}
+              handleDeployment={handleDeployment}
+            />
+          )}
         </div>
 
         {/* Main Center Panel */}
         <div className="x2a-main-panel">
-          <ClassificationPanel
-            classificationResult={classificationResult}
-            selectedFile={selectedFile}
-            selectedGitFile={selectedGitFile}
-            code={code}
-            loading={loading}
-            step={step}
-          />
+          {step === 1 ? (
+            <ContextPanel
+              code={code}
+              contextConfig={contextConfig}
+              vectorDbId="iac"
+            />
+          ) : (
+            <ClassificationPanel
+              classificationResult={classificationResult}
+              selectedFile={selectedFile}
+              selectedGitFile={selectedGitFile}
+              code={code}
+              loading={loading}
+              step={step}
+            />
+          )}
         </div>
 
         {/* Right Panel: Agent Log */}

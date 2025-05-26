@@ -1,18 +1,20 @@
-# main.py
-
 import logging
 import yaml
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from typing import List
 
 from llama_stack_client import LlamaStackClient
 from agents.classifier_agent import ClassifierAgent, ClassificationError
+
+
+# Routers (files, context, vector_db) imported here
 from routes.files import router as files_router
+from routes.context import router as context_router
+from routes.vector_db import router as vector_db_router
 
 # ─── Configure logging ───────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -27,7 +29,7 @@ client     = LlamaStackClient(base_url=llama_cfg["base_url"])
 classifier = ClassifierAgent(client=client, model=llama_cfg["model"])
 
 # ─── FastAPI App Setup ───────────────────────────────────────────────
-app = FastAPI(title="IaC Classifier API")
+app = FastAPI(title="x2Ansible API")
 
 app.mount(
     "/uploads",
@@ -43,11 +45,15 @@ app.add_middleware(
     allow_credentials=True,
 )
 
-# ─── Request Model ───────────────────────────────────────────────────
+# ─── Routers (files, context, vector_db) ─────────────────────────────
+app.include_router(files_router, prefix="/api")
+app.include_router(context_router, prefix="/api")
+app.include_router(vector_db_router, prefix="/api")
+
+# ─── Request/Response Models ─────────────────────────────────────────
 class ClassifyRequest(BaseModel):
     code: str
 
-# ─── Optional Full Response Model for Docs (optional) ────────────────
 class ClassifyResponseFull(BaseModel):
     classification: str
     summary: str
@@ -68,23 +74,14 @@ class ClassifyResponseFull(BaseModel):
 async def classify_endpoint(req: ClassifyRequest):
     try:
         wrapped = await run_in_threadpool(classifier.get_json_result, req.code)
-
-        # 👇 UNWRAP `.data` from { success, data, error }
         if wrapped.get("success") and wrapped.get("data"):
             return wrapped["data"]
-
         raise HTTPException(
             status_code=400,
             detail=wrapped.get("error", "Missing classification result")
         )
-
     except ClassificationError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
     except Exception:
         logger.exception("Unhandled error in classify endpoint")
         raise HTTPException(status_code=500, detail="Internal server error")
-
-
-# ─── Include file upload/browse routes ───────────────────────────────
-app.include_router(files_router, prefix="/api")

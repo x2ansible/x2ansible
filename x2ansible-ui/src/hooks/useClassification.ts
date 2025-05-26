@@ -64,7 +64,7 @@ export const useClassification = ({
         addLog(`🚀 Estimated ${result.speedup.toFixed(1)}x speedup vs manual review`);
       }
 
-      if (step === 0) setStep(1);
+      // if (step === 0) setStep(1);
     } catch (error) {
       addLog(`❌ Classification failed: ${(error as Error).message}`);
       setClassificationResult(null);
