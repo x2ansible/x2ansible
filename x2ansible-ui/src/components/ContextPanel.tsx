@@ -26,13 +26,15 @@ interface ContextPanelProps {
   };
   vectorDbId?: string;
   onLogMessage?: (message: string) => void;
+  onContextRetrieved?: (context: string) => void; // ✅ Add this prop
 }
 
 export default function ContextPanel({ 
   code, 
   contextConfig, 
   vectorDbId = "iac",
-  onLogMessage 
+  onLogMessage,
+  onContextRetrieved // ✅ Add this prop
 }: ContextPanelProps) {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -93,7 +95,16 @@ export default function ContextPanel({
       logMessage(`📋 Found ${contextCount} relevant conversion patterns`);
       if (contextCount > 0)
         logMessage(`🎯 Top patterns: ${data.context.slice(0, 3).map((c: any, i: number) => `Pattern ${i+1}`).join(', ')}`);
+      
       setResult(data);
+      
+      // ✅ CRITICAL FIX: Call onContextRetrieved when context is successfully retrieved
+      if (data.context && contextCount > 0) {
+        const contextString = data.context.map((c: any) => c.text).join('\n\n');
+        onContextRetrieved?.(contextString);
+        logMessage(`🔄 Context passed to next step (${contextString.length} characters)`);
+      }
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to retrieve conversion context";
       console.error("Context query error:", err);
@@ -128,6 +139,7 @@ export default function ContextPanel({
       logMessage(`❌ Failed to copy ${type} to clipboard`);
     }
   };
+
   const formatContext = (context: any) => {
     if (!context) return null;
     if (Array.isArray(context)) {

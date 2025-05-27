@@ -3,35 +3,30 @@
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import ContextPanel from "@/components/ContextPanel";
-import ContextSidebar from "@/components/ContextSidebar";   // <-- Add this if using ContextSidebar
 
-// Components: All business UI
+import ContextPanel from "@/components/ContextPanel";
+import ContextSidebar from "@/components/ContextSidebar";
 import WorkflowSidebar from "@/components/WorkflowSidebar";
 import ClassificationPanel from "@/components/ClassificationPanel";
 import AgentLogPanel from "@/components/AgentLogPanel";
 import SystemMessages from "@/components/SystemMessages";
 import ThemeToggle from "@/components/ThemeToggle";
 import GatedProgressSteps from "@/components/GatedProgressSteps";
+import GeneratePanel from "@/components/GeneratePanel";
+import GenerateSidebar from "@/components/GenerateSidebar";
 
-// Hooks: File/Git ops and classification
 import { useFileOperations } from "@/hooks/useFileOperations";
 import { useGitOperations } from "@/hooks/useGitOperations";
 import { useClassification } from "@/hooks/useClassification";
-
-// Types
 import { ClassificationResponse } from "@/types/api";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 const steps = ["Analyze", "Context", "Convert", "Validate", "Deploy"];
 
-
 export default function RunWorkflowPage() {
-  // --- Auth and Router ---
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // --- Step/Workflow State (do not touch) ---
   const [step, setStep] = useState(0);
   const [sourceType, setSourceType] = useState<"upload" | "existing" | "git">("upload");
   const [uploadKey, setUploadKey] = useState(Date.now());
@@ -40,34 +35,37 @@ export default function RunWorkflowPage() {
   const [logMessages, setLogMessages] = useState<string[]>([]);
   const [sidebarMessages, setSidebarMessages] = useState<string[]>([]);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  // File selection
   const [selectedFile, setSelectedFile] = useState("");
   const [selectedFolder, setSelectedFolder] = useState("");
   const [folderList, setFolderList] = useState<string[]>([]);
   const [fileList, setFileList] = useState<string[]>([]);
-  // Git selection
   const [gitUrl, setGitUrl] = useState("");
   const [gitRepoName, setGitRepoName] = useState("");
   const [gitFolderList, setGitFolderList] = useState<string[]>([]);
   const [gitFileList, setGitFileList] = useState<string[]>([]);
   const [selectedGitFolder, setSelectedGitFolder] = useState("");
   const [selectedGitFile, setSelectedGitFile] = useState("");
-  // Classification
   const [classificationResult, setClassificationResult] = useState<ClassificationResponse | null>(null);
 
-  // --- Step configs (unchanged) ---
+  const [retrievedContext, setRetrievedContext] = useState<string>("");
+
   const [contextConfig, setContextConfig] = useState({
     includeComments: false,
     analyzeDependencies: true,
     environmentType: 'development' as 'development' | 'staging' | 'production',
     scanDepth: 'medium' as 'shallow' | 'medium' | 'deep'
   });
+
   const [conversionConfig, setConversionConfig] = useState({
     targetFormat: 'ansible' as 'ansible' | 'terraform' | 'docker' | 'kubernetes',
     outputStyle: 'detailed' as 'minimal' | 'detailed' | 'enterprise',
     includeComments: true,
-    validateSyntax: true
+    validateSyntax: true,
+    useHandlers: false,
+    useRoles: false,
+    useVars: false
   });
+  
   const [validationConfig, setValidationConfig] = useState({
     checkSyntax: true,
     securityScan: true,
@@ -75,6 +73,7 @@ export default function RunWorkflowPage() {
     bestPractices: true,
     customRules: [] as string[]
   });
+
   const [deploymentConfig, setDeploymentConfig] = useState({
     environment: 'development' as 'development' | 'staging' | 'production',
     targetHosts: [] as string[],
@@ -82,18 +81,18 @@ export default function RunWorkflowPage() {
     notifications: true
   });
 
-  // --- Helper Functions ---
   const addLogMessage = (msg: string) =>
     setLogMessages(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+
   const addSidebarMessage = (msg: string) =>
     setSidebarMessages(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+
   const markStepAsCompleted = (stepIndex: number) => {
     if (!completedSteps.includes(stepIndex)) {
       setCompletedSteps(prev => [...prev, stepIndex].sort((a, b) => a - b));
     }
   };
 
-  // --- Step Navigation & Actions (unchanged) ---
   const handleStepClick = (stepIndex: number) => {
     const isAccessible = stepIndex === 0 ||
       completedSteps.includes(stepIndex) ||
@@ -104,52 +103,91 @@ export default function RunWorkflowPage() {
       setLogMessages([]);
     }
   };
+
   const handleContextAnalysis = () => {
-    setLoading(true); addLogMessage("🔍 Starting context analysis...");
-    setTimeout(() => { setLoading(false); markStepAsCompleted(1); addLogMessage("✅ Context analysis completed successfully"); }, 2000);
-  };
-  const handleConversion = () => {
-    setLoading(true); addLogMessage("🔄 Starting conversion process...");
-    setTimeout(() => { setLoading(false); markStepAsCompleted(2); addLogMessage("✅ Conversion completed successfully"); }, 3000);
-  };
-  const handleValidation = () => {
-    setLoading(true); addLogMessage("🔍 Starting validation checks...");
-    setTimeout(() => { setLoading(false); markStepAsCompleted(3); addLogMessage("✅ Validation completed successfully"); }, 2500);
-  };
-  const handleDeployment = () => {
-    setLoading(true); addLogMessage("🚀 Starting deployment process...");
-    setTimeout(() => { setLoading(false); markStepAsCompleted(4); addLogMessage("✅ Deployment completed successfully"); }, 4000);
+    setLoading(true);
+    addLogMessage("🔍 Starting context analysis...");
+    setTimeout(() => {
+      setLoading(false);
+      markStepAsCompleted(1);
+      addLogMessage("✅ Context analysis completed successfully");
+    }, 2000);
   };
 
-  // --- Custom Hooks: FileOps, GitOps, Classify (unchanged) ---
+  const handleConversion = () => {
+    setLoading(true);
+    addLogMessage("🔄 Starting conversion process...");
+    setTimeout(() => {
+      setLoading(false);
+      markStepAsCompleted(2);
+      addLogMessage("✅ Conversion completed successfully");
+    }, 3000);
+  };
+
+  const handleValidation = () => {
+    setLoading(true);
+    addLogMessage("🔍 Starting validation checks...");
+    setTimeout(() => {
+      setLoading(false);
+      markStepAsCompleted(3);
+      addLogMessage("✅ Validation completed successfully");
+    }, 2500);
+  };
+
+  const handleDeployment = () => {
+    setLoading(true);
+    addLogMessage("🚀 Starting deployment process...");
+    setTimeout(() => {
+      setLoading(false);
+      markStepAsCompleted(4);
+      addLogMessage("✅ Deployment completed successfully");
+    }, 4000);
+  };
+
   const { fetchFolders, fetchFilesInFolder, fetchFileContent, handleUpload } = useFileOperations({
     BACKEND_URL, setFolderList, setFileList, setCode, setSelectedFile, setUploadKey, addLogMessage, addSidebarMessage, gitRepoName, setLoading
   });
+
   const { handleCloneRepo, fetchGitFolders, fetchGitFiles, fetchGitFileContent } = useGitOperations({
     BACKEND_URL, gitUrl, setGitRepoName, setGitFolderList, setGitFileList, setCode, setSelectedGitFile, addLogMessage, addSidebarMessage, setLoading
   });
+
   const { classifyCode, handleManualClassify } = useClassification({
     BACKEND_URL, code, setClassificationResult: (result) => {
+      console.log("🔍 DEBUG - Classification result received:", result); // ✅ DEBUG LOG
       setClassificationResult(result);
-      if (result && !result.error) { markStepAsCompleted(0); }
-    }, setStep, step, setLoading, loading, addLog: addLogMessage,
+      if (result && !result.error) {
+        markStepAsCompleted(0);
+      }
+    }, setStep, step, setLoading, loading, addLog: addLogMessage
   });
 
-  // --- Effects: Auth redirect, folder fetch ---
   useEffect(() => {
     if (status === "unauthenticated") {
       const t = setTimeout(() => router.replace("/"), 2000);
       return () => clearTimeout(t);
     }
   }, [status, router]);
+
   useEffect(() => {
-    if (sourceType === "existing") { fetchFolders(); }
+    if (sourceType === "existing") {
+      fetchFolders();
+    }
   }, [sourceType, gitRepoName, fetchFolders]);
 
-  // --- Mobile Agent Log toggle ---
+  useEffect(() => {
+    if (retrievedContext && !completedSteps.includes(1)) {
+      markStepAsCompleted(1);
+    }
+  }, [retrievedContext]);
+
+  // 🔍 DEBUG: Log classificationResult when it changes
+  useEffect(() => {
+    console.log("🔍 DEBUG - classificationResult state updated:", classificationResult);
+  }, [classificationResult]);
+
   const [showAgentLog, setShowAgentLog] = useState(false);
 
-  // --- Render guards ---
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -160,6 +198,7 @@ export default function RunWorkflowPage() {
       </div>
     );
   }
+
   if (status === "unauthenticated") {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -171,10 +210,9 @@ export default function RunWorkflowPage() {
     );
   }
 
-  // --- Main Render ---
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
-      {/* Header: Unchanged, for branding and signout */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+      {/* Header */}
       <div className="flex justify-between items-center mb-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🚀 Convert to Ansible - Step by Step</h1>
         <div className="flex items-center gap-4">
@@ -191,7 +229,7 @@ export default function RunWorkflowPage() {
         </div>
       </div>
 
-      {/* Steps Progress Bar */}
+      {/* Step Progress */}
       <GatedProgressSteps
         steps={steps}
         currentStep={step}
@@ -200,7 +238,7 @@ export default function RunWorkflowPage() {
         loading={loading}
       />
 
-      {/* --- Mobile Agent Log Toggle Button --- */}
+      {/* Mobile Log Toggle */}
       <button
         className="fixed bottom-4 right-4 z-50 bg-gray-900 text-white rounded-full px-4 py-2 shadow-lg lg:hidden"
         onClick={() => setShowAgentLog((prev) => !prev)}
@@ -209,16 +247,26 @@ export default function RunWorkflowPage() {
         {showAgentLog ? "Hide Agent Log" : "Show Agent Log"}
       </button>
 
-      {/* --- THE 3-PANEL LAYOUT --- */}
+      {/* === 3-PANEL LAYOUT === */}
       <div className="x2a-3panel-layout">
-        {/* Left Panel: Sidebar */}
+        {/* LEFT SIDEBAR */}
         <div className="x2a-side-panel">
           {step === 1 ? (
             <ContextSidebar
               vectorDbId="iac"
               contextConfig={contextConfig}
               setContextConfig={setContextConfig}
-              onDocUploaded={() => {}} // Optional: handle doc uploads if you want to refresh
+              onDocUploaded={() => {}}
+            />
+          ) : step === 2 ? (
+            <GenerateSidebar
+              conversionConfig={conversionConfig}
+              setConversionConfig={setConversionConfig}
+              contextSummary={{
+                tokens: retrievedContext.length,
+                docCount: 3,
+                topics: ["package install", "systemd", "templating"]
+              }}
             />
           ) : (
             <WorkflowSidebar
@@ -263,14 +311,27 @@ export default function RunWorkflowPage() {
             />
           )}
         </div>
-
-        {/* Main Center Panel */}
+        
+        {/* CENTER PANEL */}
         <div className="x2a-main-panel">
           {step === 1 ? (
             <ContextPanel
               code={code}
               contextConfig={contextConfig}
               vectorDbId="iac"
+              onLogMessage={addLogMessage}
+              onContextRetrieved={(context: string) => {
+                setRetrievedContext(context);
+                markStepAsCompleted(1);
+              }}
+            />
+          ) : step === 2 ? (
+            <GeneratePanel
+              code={code}
+              context={retrievedContext}
+              classificationResult={classificationResult} // 🔥 CRITICAL FIX: Added missing prop
+              onLogMessage={addLogMessage}
+              onComplete={() => markStepAsCompleted(2)}
             />
           ) : (
             <ClassificationPanel
@@ -284,7 +345,7 @@ export default function RunWorkflowPage() {
           )}
         </div>
 
-        {/* Right Panel: Agent Log */}
+        {/* RIGHT LOG PANEL */}
         <div className={`x2a-log-panel ${showAgentLog ? "" : "hidden"} lg:flex`}>
           <AgentLogPanel
             logMessages={logMessages}
@@ -293,7 +354,7 @@ export default function RunWorkflowPage() {
         </div>
       </div>
 
-      {/* System Messages: Unchanged */}
+      {/* FOOTER SYSTEM MESSAGES */}
       <SystemMessages messages={sidebarMessages} />
     </div>
   );

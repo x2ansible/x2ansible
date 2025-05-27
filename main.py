@@ -9,6 +9,7 @@ from typing import List
 
 from llama_stack_client import LlamaStackClient
 from agents.classifier_agent import ClassifierAgent, ClassificationError
+from routes.generate import router as generate_router
 
 
 # Routers (files, context, vector_db) imported here
@@ -49,7 +50,7 @@ app.add_middleware(
 app.include_router(files_router, prefix="/api")
 app.include_router(context_router, prefix="/api")
 app.include_router(vector_db_router, prefix="/api")
-
+app.include_router(generate_router, prefix="/api")
 # ─── Request/Response Models ─────────────────────────────────────────
 class ClassifyRequest(BaseModel):
     code: str

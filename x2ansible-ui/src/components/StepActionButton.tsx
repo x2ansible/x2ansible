@@ -23,7 +23,7 @@ const stepConfig = {
     requiresCode: false
   },
   2: { 
-    action: "Convert Code", 
+    action: "Generate Code", 
     icon: "⚙️", 
     description: "Convert code to target format based on context",
     requiresCode: false

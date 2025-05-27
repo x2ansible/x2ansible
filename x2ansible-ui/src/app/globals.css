@@ -252,3 +252,56 @@ body {
 @container (min-width: 1200px) {
   .context-pattern { grid-template-columns: 1fr 1fr 1fr; }
 }
+/* ========== x2a Layout Fix: Remove Black Bar & Stretch Panels ========== */
+.x2a-3panel-layout {
+  display: flex;
+  height: calc(100vh - 7.5rem); /* adjust header offset if needed */
+  min-height: 0;
+  width: 100vw;
+  gap: 1rem;
+  padding: 0;
+  background: transparent !important;   /* override any unwanted bg */
+}
+.x2a-side-panel,
+.x2a-main-panel,
+.x2a-log-panel {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent !important;   /* override any unwanted bg */
+}
+
+/* Responsive for mobile/tablet: keep stretching in column direction */
+@media (max-width: 1023px) {
+  .x2a-3panel-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    padding: 1rem;
+    gap: 1rem;
+    background: transparent !important;
+  }
+  .x2a-side-panel,
+  .x2a-log-panel,
+  .x2a-main-panel {
+    width: 100%;
+    min-width: 0;
+    min-height: 250px;
+    height: auto;
+    background: transparent !important;
+  }
+}
+
+/* Remove any default or theme background on these classes */
+.x2a-side-panel,
+.x2a-main-panel,
+.x2a-log-panel {
+  background: transparent !important;
+  box-shadow: none;
+}
+
+
+
+/* ========== END PATCH ========== */
+
