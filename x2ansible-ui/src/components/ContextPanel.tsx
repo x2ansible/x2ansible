@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { 
   ChevronDownIcon, 
   ChevronUpIcon, 
@@ -26,7 +26,7 @@ interface ContextPanelProps {
   };
   vectorDbId?: string;
   onLogMessage?: (message: string) => void;
-  onContextRetrieved?: (context: string) => void; // ✅ Add this prop
+  onContextRetrieved?: (context: string) => void;
 }
 
 export default function ContextPanel({ 
@@ -34,7 +34,7 @@ export default function ContextPanel({
   contextConfig, 
   vectorDbId = "iac",
   onLogMessage,
-  onContextRetrieved // ✅ Add this prop
+  onContextRetrieved
 }: ContextPanelProps) {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -44,6 +44,9 @@ export default function ContextPanel({
   const [splitView, setSplitView] = useState<'horizontal' | 'vertical' | 'single'>('horizontal');
   const [sourceExpanded, setSourceExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // 🔥 FIX: Use ref to track if we've logged initialization to prevent infinite loops
+  const hasLoggedInit = useRef(false);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -57,68 +60,110 @@ export default function ContextPanel({
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  const logMessage = (message: string) => {
-    console.log(message);
+  // 🔥 FIX: Stable logging function that won't cause re-renders
+  const logMessage = useCallback((message: string) => {
+    console.log(`[ContextPanel] ${message}`);
     onLogMessage?.(message);
-  };
+  }, [onLogMessage]);
+
+  // 🔥 FIX: Only log initialization ONCE using ref
+  useEffect(() => {
+    if (!hasLoggedInit.current && code && onLogMessage) {
+      logMessage("🔧 Context Panel initialized");
+      logMessage(`📝 Ready to analyze ${code.length} characters of code`);
+      hasLoggedInit.current = true;
+    }
+  }, [logMessage, code, onLogMessage]);
 
   const handleQuery = async () => {
     if (!code.trim()) {
-      setError("No Infrastructure as Code to analyze");
-      logMessage("❌ Error: No code provided for analysis");
+      const errorMsg = "No Infrastructure as Code to analyze";
+      setError(errorMsg);
+      logMessage(`❌ Error: ${errorMsg}`);
       return;
     }
+
     setLoading(true);
     setResult(null);
     setError(null);
     setHasQueried(true);
 
-    logMessage(`🔍 Starting context discovery for ${getLanguageFromCode(code)} code...`);
-    logMessage(`📊 Search parameters: depth=${contextConfig?.scanDepth || 'medium'}, env=${contextConfig?.environmentType || 'development'}`);
+    const sourceLanguage = getLanguageFromCode(code);
+    logMessage(`🚀 Starting context discovery for ${sourceLanguage} code...`);
+    logMessage(`⚙️ Config: depth=${contextConfig?.scanDepth || 'medium'}, env=${contextConfig?.environmentType || 'development'}`);
 
     try {
       const startTime = Date.now();
+      
+      const requestPayload = {
+        query: code,
+        top_k: contextConfig?.scanDepth === "deep" ? 10 : contextConfig?.scanDepth === "shallow" ? 3 : 5,
+        vector_db_id: vectorDbId
+      };
+      
+      logMessage(`📤 Querying vector DB with top_k=${requestPayload.top_k}`);
+      
       const resp = await fetch(`/api/context/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: code,
-          top_k: contextConfig?.scanDepth === "deep" ? 10 : contextConfig?.scanDepth === "shallow" ? 3 : 5,
-          vector_db_id: vectorDbId
-        }),
+        body: JSON.stringify(requestPayload),
       });
+      
+      logMessage(`📥 Response: HTTP ${resp.status}`);
+      
       const data = await resp.json();
       const duration = Date.now() - startTime;
-      if (!resp.ok) throw new Error(data.detail || `HTTP ${resp.status}`);
-      const contextCount = data.context?.length || 0;
+      
+      if (!resp.ok) {
+        throw new Error(data.detail || `HTTP ${resp.status}`);
+      }
+
+      const contextCount = Array.isArray(data.context) ? data.context.length : 0;
+      const hasContent = data.context && contextCount > 0;
+      
       logMessage(`✅ Context discovery completed in ${duration}ms`);
-      logMessage(`📋 Found ${contextCount} relevant conversion patterns`);
-      if (contextCount > 0)
-        logMessage(`🎯 Top patterns: ${data.context.slice(0, 3).map((c: any, i: number) => `Pattern ${i+1}`).join(', ')}`);
+      logMessage(`📊 Found ${contextCount} conversion pattern${contextCount !== 1 ? 's' : ''}`);
+      
+      if (hasContent) {
+        logMessage(`🎯 Retrieved patterns for ${sourceLanguage} → Ansible conversion`);
+        data.context.slice(0, 2).forEach((item: any, index: number) => {
+          const preview = typeof item.text === 'string' ? item.text.substring(0, 80) : '';
+          logMessage(`📄 Pattern ${index + 1}: ${preview}...`);
+        });
+      } else {
+        logMessage(`⚠️ No relevant patterns found in knowledge base`);
+      }
       
       setResult(data);
       
-      // ✅ CRITICAL FIX: Call onContextRetrieved when context is successfully retrieved
-      if (data.context && contextCount > 0) {
-        const contextString = data.context.map((c: any) => c.text).join('\n\n');
-        onContextRetrieved?.(contextString);
-        logMessage(`🔄 Context passed to next step (${contextString.length} characters)`);
+      // 🔥 FIX: Better context passing
+      if (hasContent && onContextRetrieved) {
+        const contextString = data.context.map((c: any) => c.text || String(c)).join('\n\n');
+        logMessage(`🔄 Passing ${contextString.length} chars to next step`);
+        onContextRetrieved(contextString);
+        logMessage(`✅ Context ready for generation step`);
       }
       
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to retrieve conversion context";
+      const errorMessage = err instanceof Error ? err.message : "Context retrieval failed";
       console.error("Context query error:", err);
       logMessage(`❌ Context discovery failed: ${errorMessage}`);
       setError(errorMessage);
     } finally {
       setLoading(false);
+      logMessage(`🏁 Context discovery process completed`);
     }
   };
 
   const toggleChunkExpansion = (index: number) => {
     const newExpanded = new Set(expandedChunks);
-    if (newExpanded.has(index)) newExpanded.delete(index);
-    else newExpanded.add(index);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+      logMessage(`👁️ Collapsed pattern ${index + 1}`);
+    } else {
+      newExpanded.add(index);
+      logMessage(`👁️ Expanded pattern ${index + 1}`);
+    }
     setExpandedChunks(newExpanded);
   };
 
@@ -136,7 +181,7 @@ export default function ContextPanel({
       await navigator.clipboard.writeText(text);
       logMessage(`📋 Copied ${type} to clipboard`);
     } catch (err) {
-      logMessage(`❌ Failed to copy ${type} to clipboard`);
+      logMessage(`❌ Failed to copy ${type}`);
     }
   };
 
@@ -193,7 +238,7 @@ export default function ContextPanel({
             {/* Pattern Content */}
             <div className="p-3">
               <div className="relative">
-                <pre className="text-slate-200 whitespace-pre-wrap font-mono text-xs leading-relaxed bg-slate-900/50 rounded border border-slate-600/20 overflow-x-auto rh-scrollbar min-h-[100px] max-h-[300px] overflow-y-auto">
+                <pre className="text-slate-200 whitespace-pre-wrap font-mono text-xs leading-relaxed bg-slate-900/50 rounded border border-slate-600/20 p-3 min-h-[100px] max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-500">
                   {isExpanded || !hasMore ? item.text : preview + '...'}
                 </pre>
                 <div className="absolute top-2 right-2">
@@ -252,7 +297,10 @@ export default function ContextPanel({
               <ClipboardDocumentIcon className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setSourceExpanded(!sourceExpanded)}
+              onClick={() => {
+                setSourceExpanded(!sourceExpanded);
+                logMessage(`🔍 ${sourceExpanded ? 'Collapsed' : 'Expanded'} source view`);
+              }}
               className="p-1 text-slate-400 hover:text-blue-300 transition-colors rounded hover:bg-slate-600/30"
               title={sourceExpanded ? "Collapse" : "Expand"}
             >
@@ -264,17 +312,20 @@ export default function ContextPanel({
             </button>
           </div>
         </div>
-        {/* Scrollable Source Content */}
-        <div className="flex-1 p-3 relative overflow-y-auto rh-scrollbar">
-          <textarea
-            className="w-full h-full min-h-[180px] bg-slate-900/60 text-slate-200 font-mono resize-none border border-slate-600/30 rounded p-3 outline-none focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/25 transition-colors placeholder-slate-500 rh-scrollbar text-xs leading-relaxed"
-            value={code}
-            readOnly
-            placeholder="Your Infrastructure as Code will appear here..."
-            style={{ minHeight: 180 }}
-          />
-          <div className="absolute top-2 right-2 px-2 py-0.5 text-xs bg-slate-800/80 text-slate-400 rounded border border-slate-600/40 backdrop-blur-sm">
-            Read-only
+        {/* Scrollable Source Content - FIXED VERTICAL SCROLLING */}
+        <div className="flex-1 overflow-hidden">
+          <div className="h-full p-3 relative">
+            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-500">
+              <textarea
+                className="w-full h-full min-h-[300px] bg-slate-900/60 text-slate-200 font-mono resize-none border border-slate-600/30 rounded p-3 outline-none focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/25 transition-colors placeholder-slate-500 text-xs leading-relaxed"
+                value={code}
+                readOnly
+                placeholder="Your Infrastructure as Code will appear here..."
+              />
+              <div className="absolute top-2 right-2 px-2 py-0.5 text-xs bg-slate-800/80 text-slate-400 rounded border border-slate-600/40 backdrop-blur-sm">
+                Read-only
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -311,46 +362,50 @@ export default function ContextPanel({
               )}
             </div>
           </div>
-          {/* Scrollable Conversion Patterns Panel */}
-          <div className="flex-1 p-3">
-            <div className="overflow-y-auto rh-scrollbar max-h-[420px]">
-              {result.context && contextCount > 0 ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="font-semibold text-slate-200 text-base">
-                        Conversion Patterns
-                      </h4>
-                      <span className="px-2 py-0.5 text-xs bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-300 rounded-full border border-blue-400/40 backdrop-blur-sm">
-                        {contextCount} matches
-                      </span>
+          {/* Scrollable Conversion Patterns Panel - FIXED VERTICAL SCROLLING */}
+          <div className="flex-1 overflow-hidden">
+            <div className="h-full p-3">
+              <div className="h-full overflow-y-auto scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-500">
+                {result.context && contextCount > 0 ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2 sticky top-0 bg-slate-800/80 backdrop-blur-sm rounded p-2 border border-slate-600/30">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-semibold text-slate-200 text-base">
+                          Conversion Patterns
+                        </h4>
+                        <span className="px-2 py-0.5 text-xs bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-300 rounded-full border border-blue-400/40 backdrop-blur-sm">
+                          {contextCount} matches
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(
+                          result.context.map((c: any, i: number) => `=== Pattern ${i + 1} ===\n${c.text}`).join('\n\n'),
+                          'all patterns'
+                        )}
+                        className="flex items-center space-x-1 px-2 py-1 text-xs text-slate-400 hover:text-blue-300 transition-colors rounded hover:bg-slate-600/30"
+                      >
+                        <ClipboardDocumentIcon className="w-4 h-4" />
+                        <span>Copy All</span>
+                      </button>
                     </div>
-                    <button
-                      onClick={() => copyToClipboard(
-                        result.context.map((c: any, i: number) => `=== Pattern ${i + 1} ===\n${c.text}`).join('\n\n'),
-                        'all patterns'
-                      )}
-                      className="flex items-center space-x-1 px-2 py-1 text-xs text-slate-400 hover:text-blue-300 transition-colors rounded hover:bg-slate-600/30"
-                    >
-                      <ClipboardDocumentIcon className="w-4 h-4" />
-                      <span>Copy All</span>
-                    </button>
+                    <div className="pb-4">
+                      {formatContext(result.context)}
+                    </div>
                   </div>
-                  <div>
-                    {formatContext(result.context)}
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center py-6">
+                      <MagnifyingGlassIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                      <h4 className="font-medium text-slate-400 mb-2 text-base">
+                        No Conversion Patterns Found
+                      </h4>
+                      <p className="text-slate-500 max-w-md mx-auto text-xs">
+                        No relevant conversion patterns were found in the knowledge base for your {sourceLanguage} code.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <MagnifyingGlassIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <h4 className="font-medium text-slate-400 mb-2 text-base">
-                    No Conversion Patterns Found
-                  </h4>
-                  <p className="text-slate-500 max-w-md mx-auto text-xs">
-                    No relevant conversion patterns were found in the knowledge base for your {sourceLanguage} code.
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -422,21 +477,30 @@ export default function ContextPanel({
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-1 bg-slate-700/50 rounded p-1 border border-slate-600/40">
                 <button
-                  onClick={() => setSplitView('single')}
+                  onClick={() => {
+                    setSplitView('single');
+                    logMessage(`🖼️ Changed to single view`);
+                  }}
                   className={`p-1 rounded transition-colors ${splitView === 'single' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'}`}
                   title="Single view"
                 >
                   <DocumentTextIcon className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setSplitView('horizontal')}
+                  onClick={() => {
+                    setSplitView('horizontal');
+                    logMessage(`🖼️ Changed to horizontal split`);
+                  }}
                   className={`p-1 rounded transition-colors ${splitView === 'horizontal' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'}`}
                   title="Horizontal split"
                 >
                   <Bars3BottomLeftIcon className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setSplitView('vertical')}
+                  onClick={() => {
+                    setSplitView('vertical');
+                    logMessage(`🖼️ Changed to vertical split`);
+                  }}
                   className={`p-1 rounded transition-colors ${splitView === 'vertical' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'}`}
                   title="Vertical split"
                 >
@@ -477,6 +541,7 @@ export default function ContextPanel({
           </div>
         </div>
       </div>
+
       {/* Action Button */}
       <div className="p-3 border-b border-slate-600/20">
         <button
@@ -512,6 +577,7 @@ export default function ContextPanel({
           </div>
         </button>
       </div>
+
       {/* Error State */}
       {error && (
         <div className="mx-3 my-2 p-2 bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-500/30 rounded-lg backdrop-blur-sm">
@@ -524,6 +590,7 @@ export default function ContextPanel({
           </div>
         </div>
       )}
+
       {/* Split View Content */}
       {renderSplitView()}
     </div>
