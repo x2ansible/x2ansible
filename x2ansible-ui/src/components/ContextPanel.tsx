@@ -41,7 +41,8 @@ export default function ContextPanel({
   const [hasQueried, setHasQueried] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedChunks, setExpandedChunks] = useState<Set<number>>(new Set());
-  const [splitView, setSplitView] = useState<'horizontal' | 'vertical' | 'single'>('horizontal');
+  const [splitView, setSplitView] = useState<'horizontal' | 'vertical' | 'single'>('single');
+
   const [sourceExpanded, setSourceExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   

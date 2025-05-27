@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Rocket, Sparkles, Wrench, Server } from "lucide-react";
@@ -115,11 +115,27 @@ export default function Page() {
         <h1 className="text-4xl md:text-5xl font-black text-center bg-gradient-to-r from-blue-400 via-fuchsia-400 to-cyan-400 bg-[length:200%_auto] bg-clip-text text-transparent animate-gradient-wave mb-2 tracking-tight drop-shadow-md">
           Agentic Workflows for IaC
         </h1>
-        <p className="text-center text-lg md:text-xl text-slate-300 font-medium max-w-2xl mb-4 drop-shadow">
-         Agentic automation—where your decisions guide every step.<br />
-          <span className="text-slate-400">Pick a workflow and stay in control-AI supports, you decide 
-            </span>
-        </p>
+        {/* Marquee Subtitle */}
+        <div
+          className="w-full flex justify-center mt-1 mb-7 select-none"
+          style={{ minHeight: '2.7em', position: "relative", overflow: "hidden" }}
+        >
+          <div
+            className={`
+              whitespace-nowrap text-lg md:text-xl text-slate-300 font-medium max-w-2xl
+              opacity-0 animate-subtitle-fadein
+              subtitle-marquee
+            `}
+            style={{
+              animation: "subtitle-fadein 1.2s cubic-bezier(.61,0,.44,1) forwards, marquee-scroll 19s linear 1.2s infinite"
+            }}
+            tabIndex={-1}
+          >
+            Agentic automation—where your decisions guide every step.
+            <span className="mx-2" />
+            Pick a workflow and stay in control—AI supports, you decide.
+          </div>
+        </div>
         {/* Responsive, compact cards grid */}
         <div
           className="w-full grid gap-6 sm:gap-7 md:gap-8"
@@ -134,7 +150,8 @@ export default function Page() {
               className={`
                 relative group bg-gradient-to-br ${wf.cardColor} border backdrop-blur-lg rounded-2xl shadow-xl px-5 py-7 sm:px-6 sm:py-8 md:px-7 md:py-9 flex flex-col items-center text-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-2xl animate-fade-up
                 ${wf.comingSoon ? "cursor-not-allowed opacity-80" : "cursor-pointer"}
-                min-h-[220px] max-w-full
+                min-h-[270px] max-w-full
+                card-even-height
               `}
               style={{ animationDelay: `${idx * 0.08 + 0.08}s` }}
               tabIndex={0}
@@ -152,10 +169,13 @@ export default function Page() {
               <p className="text-slate-200 text-[15px] md:text-base font-medium mb-1 max-w-xs mx-auto opacity-90">
                 {wf.description}
               </p>
+              {/* Spacer to push button to the bottom */}
+              <div className="flex-1" />
               <button
                 onClick={e => { e.stopPropagation(); tryWorkflow(wf.key); }}
-                className={`mt-3 px-5 py-2 text-[15px] md:text-base font-bold rounded-lg bg-gradient-to-r ${wf.buttonColor} shadow ring-1 ring-white/10 hover:shadow-lg hover:brightness-110 hover:scale-105 transition-all duration-200 text-white focus:outline-none focus:ring-4 focus:ring-blue-300`}
+                className={`mt-3 px-5 py-2 text-[15px] md:text-base font-bold rounded-lg bg-gradient-to-r ${wf.buttonColor} shadow ring-1 ring-white/10 hover:shadow-lg hover:brightness-110 hover:scale-105 transition-all duration-200 text-white focus:outline-none focus:ring-4 focus:ring-blue-300 w-full`}
                 disabled={wf.comingSoon}
+                style={{ minHeight: 44 }}
               >
                 🚀 Try This Workflow
               </button>
@@ -264,6 +284,25 @@ export default function Page() {
         .animate-fade-in { animation: fadeIn 0.25s cubic-bezier(0.4,0,0.2,1);}
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.96);} to { opacity: 1; transform: scale(1);} }
         .group:focus-within { box-shadow: 0 0 0 4px #38bdf880; }
+
+        @keyframes subtitle-fadein {
+          to { opacity: 1; }
+        }
+        @keyframes marquee-scroll {
+          0%   { transform: translateX(100%); }
+          100% { transform: translateX(-110%); }
+        }
+        .subtitle-marquee:hover {
+          animation-play-state: paused !important;
+          cursor: pointer;
+        }
+        /* Fix all cards to same height for button alignment */
+        .card-even-height {
+          display: flex;
+          flex-direction: column;
+          min-height: 330px; /* You can tweak for more/less height */
+          height: 100%;
+        }
       `}</style>
     </main>
   );

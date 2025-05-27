@@ -14,6 +14,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import GatedProgressSteps from "@/components/GatedProgressSteps";
 import GeneratePanel from "@/components/GeneratePanel";
 import GenerateSidebar from "@/components/GenerateSidebar";
+import ValidationPanel from "@/components/ValidationPanel";
+import ValidationSidebar from "@/components/ValidationSidebar";
 
 import { useFileOperations } from "@/hooks/useFileOperations";
 import { useGitOperations } from "@/hooks/useGitOperations";
@@ -48,6 +50,8 @@ export default function RunWorkflowPage() {
   const [classificationResult, setClassificationResult] = useState<ClassificationResponse | null>(null);
 
   const [retrievedContext, setRetrievedContext] = useState<string>("");
+  const [generatedPlaybook, setGeneratedPlaybook] = useState<string>("");
+  const [validationResult, setValidationResult] = useState<any>(null);
 
   const [contextConfig, setContextConfig] = useState({
     includeComments: false,
@@ -121,17 +125,78 @@ export default function RunWorkflowPage() {
       setLoading(false);
       markStepAsCompleted(2);
       addLogMessage("✅ Conversion completed successfully");
+      
+      // Mock generated playbook - replace with actual generated content
+      const mockPlaybook = `---
+- name: Install and configure web server
+  hosts: webservers
+  become: yes
+  vars:
+    packages:
+      - nginx
+      - git
+      - curl
+    
+  tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+    
+    - name: Install required packages
+      package:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
+    
+    - name: Start and enable nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+    
+    - name: Create web directory
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+    
+    - name: Deploy index.html
+      template:
+        src: index.html.j2
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: restart nginx
+    
+  handlers:
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted`;
+      
+      setGeneratedPlaybook(mockPlaybook);
+      addLogMessage("📋 Generated Ansible playbook ready for validation");
     }, 3000);
   };
 
   const handleValidation = () => {
     setLoading(true);
-    addLogMessage("🔍 Starting validation checks...");
-    setTimeout(() => {
-      setLoading(false);
-      markStepAsCompleted(3);
-      addLogMessage("✅ Validation completed successfully");
-    }, 2500);
+    addLogMessage("🛡️ Starting validation process...");
+    // The ValidationPanel will handle the actual validation logic
+    // This function is mainly for triggering from sidebar or other components
+  };
+
+  const handleValidationComplete = (result: any) => {
+    setValidationResult(result);
+    markStepAsCompleted(3);
+    setLoading(false);
+    addLogMessage("✅ Validation completed successfully");
+    addLogMessage(`📊 Quality score: ${result.score}/100 with ${result.summary.total} issues found`);
   };
 
   const handleDeployment = () => {
@@ -154,7 +219,7 @@ export default function RunWorkflowPage() {
 
   const { classifyCode, handleManualClassify } = useClassification({
     BACKEND_URL, code, setClassificationResult: (result) => {
-      console.log("🔍 DEBUG - Classification result received:", result); // ✅ DEBUG LOG
+      console.log("🔍 DEBUG - Classification result received:", result);
       setClassificationResult(result);
       if (result && !result.error) {
         markStepAsCompleted(0);
@@ -179,9 +244,9 @@ export default function RunWorkflowPage() {
     if (retrievedContext && !completedSteps.includes(1)) {
       markStepAsCompleted(1);
     }
-  }, [retrievedContext]);
+  }, [retrievedContext, completedSteps]);
 
-  // 🔍 DEBUG: Log classificationResult when it changes
+  // Debug: Log classificationResult when it changes
   useEffect(() => {
     console.log("🔍 DEBUG - classificationResult state updated:", classificationResult);
   }, [classificationResult]);
@@ -268,6 +333,14 @@ export default function RunWorkflowPage() {
                 topics: ["package install", "systemd", "templating"]
               }}
             />
+          ) : step === 3 ? (
+            <ValidationSidebar
+              validationConfig={validationConfig}
+              setValidationConfig={setValidationConfig}
+              onValidate={handleValidation}
+              validationResult={validationResult}
+              loading={loading}
+            />
           ) : (
             <WorkflowSidebar
               currentStep={step}
@@ -329,9 +402,20 @@ export default function RunWorkflowPage() {
             <GeneratePanel
               code={code}
               context={retrievedContext}
-              classificationResult={classificationResult} // 🔥 CRITICAL FIX: Added missing prop
+              classificationResult={classificationResult}
               onLogMessage={addLogMessage}
-              onComplete={() => markStepAsCompleted(2)}
+              onComplete={(playbook: string) => {
+                setGeneratedPlaybook(playbook);
+                markStepAsCompleted(2);
+                addLogMessage("📋 Playbook generated and ready for validation");
+              }}
+            />
+          ) : step === 3 ? (
+            <ValidationPanel
+              playbook={generatedPlaybook}
+              validationConfig={validationConfig}
+              onLogMessage={addLogMessage}
+              onValidationComplete={handleValidationComplete}
             />
           ) : (
             <ClassificationPanel

@@ -1,3 +1,5 @@
+# main.py
+
 import logging
 import yaml
 from fastapi import FastAPI, HTTPException
@@ -9,25 +11,28 @@ from typing import List
 
 from llama_stack_client import LlamaStackClient
 from agents.classifier_agent import ClassifierAgent, ClassificationError
-from routes.generate import router as generate_router
 
-
-# Routers (files, context, vector_db) imported here
+# Import all routers (including validate)
 from routes.files import router as files_router
 from routes.context import router as context_router
 from routes.vector_db import router as vector_db_router
+from routes.generate import router as generate_router
+from routes.validate import router as validate_router  # <--- NEW
 
 # ─── Configure logging ───────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ─── Load config.yaml ────────────────────────────────────────────────
-with open("config.yaml", "r") as f:
-    config = yaml.safe_load(f)
-
-llama_cfg  = config["llama_stack"]
-client     = LlamaStackClient(base_url=llama_cfg["base_url"])
-classifier = ClassifierAgent(client=client, model=llama_cfg["model"])
+try:
+    with open("config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+    llama_cfg = config["llama_stack"]
+    client = LlamaStackClient(base_url=llama_cfg["base_url"])
+    classifier = ClassifierAgent(client=client, model=llama_cfg["model"])
+except Exception as e:
+    logger.error(f"❌ Failed to load config.yaml or initialize agents: {e}")
+    raise
 
 # ─── FastAPI App Setup ───────────────────────────────────────────────
 app = FastAPI(title="x2Ansible API")
@@ -46,11 +51,13 @@ app.add_middleware(
     allow_credentials=True,
 )
 
-# ─── Routers (files, context, vector_db) ─────────────────────────────
+# ─── Include Routers ────────────────────────────────────────────────
 app.include_router(files_router, prefix="/api")
 app.include_router(context_router, prefix="/api")
 app.include_router(vector_db_router, prefix="/api")
 app.include_router(generate_router, prefix="/api")
+app.include_router(validate_router, prefix="/api")   # <--- NEW
+
 # ─── Request/Response Models ─────────────────────────────────────────
 class ClassifyRequest(BaseModel):
     code: str

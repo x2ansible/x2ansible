@@ -217,7 +217,7 @@ export default function GeneratePanel({
           </div>
           <div>
             <h3 className="font-bold text-slate-100 text-xl">
-              🤖 AI Analysis Complete
+              🤖 Analysis Summary
             </h3>
             <p className="text-slate-400 text-sm">
               {classificationResult?.classification || 'Unknown'} → Ansible conversion ready
@@ -478,8 +478,8 @@ export default function GeneratePanel({
             </div>
             <div>
               <h1 className="font-bold text-white text-2xl lg:text-3xl">
-                {panelMode === 'ready' && 'AI-Powered Conversion'}
-                {panelMode === 'analysis' && 'Analysis & Strategy'}
+                {panelMode === 'ready' && 'Agentic '}
+                {panelMode === 'analysis' && 'Code Generation'}
                 {panelMode === 'generating' && 'Live Generation'}
                 {panelMode === 'complete' && 'Conversion Complete'}
               </h1>
