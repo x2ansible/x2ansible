@@ -412,7 +412,7 @@ export default function RunWorkflowPage() {
       </div>
 
       {/* FOOTER SYSTEM MESSAGES */}
-      <SystemMessages messages={sidebarMessages} />
+      {/* <SystemMessages messages={sidebarMessages} /> */}
     </div>
   );
 }
