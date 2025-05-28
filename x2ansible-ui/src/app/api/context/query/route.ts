@@ -1,43 +1,54 @@
+// x2ansible-ui/src/app/api/context/query/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-
-export async function POST(request: NextRequest) {
-  console.log("=== Context Query API Called ===");
-  console.log("Backend URL:", BACKEND_URL);
-  
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    console.log("Request body:", body);
-    
-    const response = await fetch(`${BACKEND_URL}/api/context/query`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    const body = await req.json();
 
-    console.log("Backend response status:", response.status);
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Backend error response:", errorData);
-      return NextResponse.json(errorData, { status: response.status });
+    let response: Response;
+    try {
+      response = await fetch("http://127.0.0.1:8000/api/context/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch (fetchError: any) {
+      // Could not reach backend at all
+      return NextResponse.json(
+        { success: false, error: `Backend not reachable: ${fetchError?.message || String(fetchError)}` },
+        { status: 502 }
+      );
     }
 
-    const data = await response.json();
-    console.log("Backend response data:", data);
+    // Try to parse JSON, but handle non-JSON response
+    let result: any = null;
+    try {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        result = await response.json();
+      } else {
+        // Not JSON, try to get text for debug
+        const text = await response.text();
+        return NextResponse.json(
+          { success: false, error: `Backend did not return JSON. Raw: ${text.slice(0, 300)}` },
+          { status: response.status }
+        );
+      }
+    } catch (jsonError: any) {
+      // Could not parse JSON at all
+      return NextResponse.json(
+        { success: false, error: `Failed to parse backend JSON: ${jsonError?.message || String(jsonError)}` },
+        { status: response.status }
+      );
+    }
 
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error("Context query proxy error:", error);
+    return NextResponse.json(result, { status: response.status });
+
+  } catch (e: any) {
+    // Final safety net, always return JSON error
     return NextResponse.json(
-      { 
-        error: "Failed to query context", 
-        detail: error instanceof Error ? error.message : "Unknown error",
-        backend_url: BACKEND_URL
-      },
+      { success: false, error: `Handler crashed: ${e?.message || String(e)}` },
       { status: 500 }
     );
   }

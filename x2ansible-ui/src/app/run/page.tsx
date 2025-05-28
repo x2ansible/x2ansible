@@ -29,30 +29,40 @@ export default function RunWorkflowPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  // Core navigation state
   const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [showAgentLog, setShowAgentLog] = useState(false);
+
+  // File and source management state
   const [sourceType, setSourceType] = useState<"upload" | "existing" | "git">("upload");
   const [uploadKey, setUploadKey] = useState(Date.now());
   const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [logMessages, setLogMessages] = useState<string[]>([]);
-  const [sidebarMessages, setSidebarMessages] = useState<string[]>([]);
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [selectedFile, setSelectedFile] = useState("");
   const [selectedFolder, setSelectedFolder] = useState("");
   const [folderList, setFolderList] = useState<string[]>([]);
   const [fileList, setFileList] = useState<string[]>([]);
+
+  // Git operations state
   const [gitUrl, setGitUrl] = useState("");
   const [gitRepoName, setGitRepoName] = useState("");
   const [gitFolderList, setGitFolderList] = useState<string[]>([]);
   const [gitFileList, setGitFileList] = useState<string[]>([]);
   const [selectedGitFolder, setSelectedGitFolder] = useState("");
   const [selectedGitFile, setSelectedGitFile] = useState("");
-  const [classificationResult, setClassificationResult] = useState<ClassificationResponse | null>(null);
 
+  // Logging state
+  const [logMessages, setLogMessages] = useState<string[]>([]);
+  const [sidebarMessages, setSidebarMessages] = useState<string[]>([]);
+
+  // Classification and workflow results
+  const [classificationResult, setClassificationResult] = useState<ClassificationResponse | null>(null);
   const [retrievedContext, setRetrievedContext] = useState<string>("");
   const [generatedPlaybook, setGeneratedPlaybook] = useState<string>("");
   const [validationResult, setValidationResult] = useState<any>(null);
 
+  // Configuration state for different workflow steps
   const [contextConfig, setContextConfig] = useState({
     includeComments: false,
     analyzeDependencies: true,
@@ -85,6 +95,7 @@ export default function RunWorkflowPage() {
     notifications: true
   });
 
+  // Utility functions for logging and step management
   const addLogMessage = (msg: string) =>
     setLogMessages(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
 
@@ -108,87 +119,19 @@ export default function RunWorkflowPage() {
     }
   };
 
+  // Workflow step handlers
   const handleContextAnalysis = () => {
     setLoading(true);
     addLogMessage("🔍 Starting context analysis...");
-    setTimeout(() => {
-      setLoading(false);
-      markStepAsCompleted(1);
-      addLogMessage("✅ Context analysis completed successfully");
-    }, 2000);
   };
 
   const handleConversion = () => {
     setLoading(true);
     addLogMessage("🔄 Starting conversion process...");
-    setTimeout(() => {
-      setLoading(false);
-      markStepAsCompleted(2);
-      addLogMessage("✅ Conversion completed successfully");
-      
-      // Mock generated playbook - replace with actual generated content
-      const mockPlaybook = `---
-- name: Install and configure web server
-  hosts: webservers
-  become: yes
-  vars:
-    packages:
-      - nginx
-      - git
-      - curl
-    
-  tasks:
-    - name: Update package cache
-      apt:
-        update_cache: yes
-        cache_valid_time: 3600
-      when: ansible_os_family == "Debian"
-    
-    - name: Install required packages
-      package:
-        name: "{{ item }}"
-        state: present
-      loop: "{{ packages }}"
-    
-    - name: Start and enable nginx
-      systemd:
-        name: nginx
-        state: started
-        enabled: yes
-    
-    - name: Create web directory
-      file:
-        path: /var/www/html
-        state: directory
-        owner: www-data
-        group: www-data
-        mode: '0755'
-    
-    - name: Deploy index.html
-      template:
-        src: index.html.j2
-        dest: /var/www/html/index.html
-        owner: www-data
-        group: www-data
-        mode: '0644'
-      notify: restart nginx
-    
-  handlers:
-    - name: restart nginx
-      systemd:
-        name: nginx
-        state: restarted`;
-      
-      setGeneratedPlaybook(mockPlaybook);
-      addLogMessage("📋 Generated Ansible playbook ready for validation");
-    }, 3000);
   };
 
   const handleValidation = () => {
-    setLoading(true);
-    addLogMessage("🛡️ Starting validation process...");
-    // The ValidationPanel will handle the actual validation logic
-    // This function is mainly for triggering from sidebar or other components
+    addLogMessage("🛡️ Validation process initiated...");
   };
 
   const handleValidationComplete = (result: any) => {
@@ -196,7 +139,14 @@ export default function RunWorkflowPage() {
     markStepAsCompleted(3);
     setLoading(false);
     addLogMessage("✅ Validation completed successfully");
-    addLogMessage(`📊 Quality score: ${result.score}/100 with ${result.summary.total} issues found`);
+    
+    const issueCount = result.issues?.length || 0;
+    const status = result.passed ? "PASSED" : "FAILED"; 
+    addLogMessage(`📊 Validation ${status} with ${issueCount} issues found`);
+    
+    if (result.debug_info?.num_issues !== undefined) {
+      addLogMessage(`🔍 Debug: ${result.debug_info.num_issues} issues processed`);
+    }
   };
 
   const handleDeployment = () => {
@@ -209,24 +159,51 @@ export default function RunWorkflowPage() {
     }, 4000);
   };
 
+  // Custom hooks
   const { fetchFolders, fetchFilesInFolder, fetchFileContent, handleUpload } = useFileOperations({
-    BACKEND_URL, setFolderList, setFileList, setCode, setSelectedFile, setUploadKey, addLogMessage, addSidebarMessage, gitRepoName, setLoading
+    BACKEND_URL, 
+    setFolderList, 
+    setFileList, 
+    setCode, 
+    setSelectedFile, 
+    setUploadKey, 
+    addLogMessage, 
+    addSidebarMessage, 
+    gitRepoName, 
+    setLoading
   });
 
   const { handleCloneRepo, fetchGitFolders, fetchGitFiles, fetchGitFileContent } = useGitOperations({
-    BACKEND_URL, gitUrl, setGitRepoName, setGitFolderList, setGitFileList, setCode, setSelectedGitFile, addLogMessage, addSidebarMessage, setLoading
+    BACKEND_URL, 
+    gitUrl, 
+    setGitRepoName, 
+    setGitFolderList, 
+    setGitFileList, 
+    setCode, 
+    setSelectedGitFile, 
+    addLogMessage, 
+    addSidebarMessage, 
+    setLoading
   });
 
   const { classifyCode, handleManualClassify } = useClassification({
-    BACKEND_URL, code, setClassificationResult: (result) => {
+    BACKEND_URL, 
+    code, 
+    setClassificationResult: (result) => {
       console.log("🔍 DEBUG - Classification result received:", result);
       setClassificationResult(result);
       if (result && !result.error) {
         markStepAsCompleted(0);
       }
-    }, setStep, step, setLoading, loading, addLog: addLogMessage
+    }, 
+    setStep, 
+    step, 
+    setLoading, 
+    loading, 
+    addLog: addLogMessage
   });
 
+  // Effects
   useEffect(() => {
     if (status === "unauthenticated") {
       const t = setTimeout(() => router.replace("/"), 2000);
@@ -246,13 +223,11 @@ export default function RunWorkflowPage() {
     }
   }, [retrievedContext, completedSteps]);
 
-  // Debug: Log classificationResult when it changes
   useEffect(() => {
     console.log("🔍 DEBUG - classificationResult state updated:", classificationResult);
   }, [classificationResult]);
 
-  const [showAgentLog, setShowAgentLog] = useState(false);
-
+  // Loading state
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -264,6 +239,7 @@ export default function RunWorkflowPage() {
     );
   }
 
+  // Unauthenticated state
   if (status === "unauthenticated") {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -337,7 +313,6 @@ export default function RunWorkflowPage() {
             <ValidationSidebar
               validationConfig={validationConfig}
               setValidationConfig={setValidationConfig}
-              onValidate={handleValidation}
               validationResult={validationResult}
               loading={loading}
             />
@@ -390,8 +365,6 @@ export default function RunWorkflowPage() {
           {step === 1 ? (
             <ContextPanel
               code={code}
-              contextConfig={contextConfig}
-              vectorDbId="iac"
               onLogMessage={addLogMessage}
               onContextRetrieved={(context: string) => {
                 setRetrievedContext(context);

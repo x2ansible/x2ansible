@@ -17,7 +17,8 @@ from routes.files import router as files_router
 from routes.context import router as context_router
 from routes.vector_db import router as vector_db_router
 from routes.generate import router as generate_router
-from routes.validate import router as validate_router  # <--- NEW
+from routes.validate import router as validate_router
+from routes.spec import router as spec_router
 
 # ─── Configure logging ───────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -56,7 +57,8 @@ app.include_router(files_router, prefix="/api")
 app.include_router(context_router, prefix="/api")
 app.include_router(vector_db_router, prefix="/api")
 app.include_router(generate_router, prefix="/api")
-app.include_router(validate_router, prefix="/api")   # <--- NEW
+app.include_router(validate_router, prefix="/api")  
+app.include_router(spec_router, prefix="/api") 
 
 # ─── Request/Response Models ─────────────────────────────────────────
 class ClassifyRequest(BaseModel):

@@ -1,128 +1,126 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { 
   ShieldCheckIcon, 
   Cog6ToothIcon, 
-  ExclamationTriangleIcon,
+  PlayIcon, 
   CheckCircleIcon,
-  XMarkIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  FireIcon,
   BugAntIcon,
-  LockClosedIcon,
-  CpuChipIcon,
-  DocumentCheckIcon,
-  ClipboardDocumentListIcon,
-  AdjustmentsHorizontalIcon,
-  PlayIcon,
-  PlusIcon,
-  TrashIcon,
-  InformationCircleIcon
+  KeyIcon,
+  SparklesIcon,
+  ChartBarIcon,
+  ArrowPathIcon
 } from "@heroicons/react/24/outline";
 
 interface ValidationSidebarProps {
-  validationConfig?: {
-    checkSyntax?: boolean;
-    securityScan?: boolean;
-    performanceCheck?: boolean;
-    bestPractices?: boolean;
-    customRules?: string[];
+  validationConfig: {
+    checkSyntax: boolean;
+    securityScan: boolean;
+    performanceCheck: boolean;
+    bestPractices: boolean;
+    customRules: string[];
   };
-  setValidationConfig?: (config: any) => void;
-  onValidate?: () => void;
-  validationResult?: {
-    success: boolean;
-    summary: {
-      total: number;
-      errors: number;
-      warnings: number;
-      info: number;
-      suggestions: number;
-    };
-    score?: number;
-  } | null;
+  setValidationConfig: (config: any) => void;
+  validationResult?: any;
   loading?: boolean;
 }
 
 export default function ValidationSidebar({ 
-  validationConfig,
-  setValidationConfig,
-  onValidate,
+  validationConfig, 
+  setValidationConfig, 
   validationResult,
   loading = false
 }: ValidationSidebarProps) {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['checks', 'rules']));
-  const [newCustomRule, setNewCustomRule] = useState("");
-  const [showAddRule, setShowAddRule] = useState(false);
-  const [validationPresets, setValidationPresets] = useState([
-    { name: 'Basic', checks: { checkSyntax: true, securityScan: false, performanceCheck: false, bestPractices: true } },
-    { name: 'Security', checks: { checkSyntax: true, securityScan: true, performanceCheck: false, bestPractices: true } },
-    { name: 'Performance', checks: { checkSyntax: true, securityScan: true, performanceCheck: true, bestPractices: true } },
-    { name: 'Comprehensive', checks: { checkSyntax: true, securityScan: true, performanceCheck: true, bestPractices: true } }
-  ]);
+  const [lintProfiles, setLintProfiles] = useState<any[]>([]);
+  const [selectedProfile, setSelectedProfile] = useState('production');
+  const [validationStats, setValidationStats] = useState({
+    totalRuns: 0,
+    successRate: 0,
+    avgIssues: 0,
+    lastRun: null as Date | null
+  });
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['config', 'profile']));
+
+  // Load validation profiles and stats
+  useEffect(() => {
+    const mockProfiles = [
+      { 
+        id: 'basic', 
+        name: 'Basic', 
+        description: 'Essential syntax and structure checks',
+        rules: 15,
+        color: 'from-green-500 to-emerald-400'
+      },
+      { 
+        id: 'moderate', 
+        name: 'Moderate', 
+        description: 'Includes security and best practices',
+        rules: 32,
+        color: 'from-yellow-500 to-orange-400'
+      },
+      { 
+        id: 'production', 
+        name: 'Production', 
+        description: 'Comprehensive validation for production',
+        rules: 58,
+        color: 'from-red-500 to-pink-400'
+      }
+    ];
+    setLintProfiles(mockProfiles);
+
+    // Mock stats - replace with actual API call
+    setValidationStats({
+      totalRuns: 127,
+      successRate: 84.2,
+      avgIssues: 3.7,
+      lastRun: new Date()
+    });
+  }, []);
 
   const handleConfigChange = (key: string, value: any) => {
-    if (setValidationConfig && validationConfig) {
-      setValidationConfig({
-        ...validationConfig,
-        [key]: value
-      });
-    }
+    setValidationConfig({
+      ...validationConfig,
+      [key]: value
+    });
   };
 
   const toggleSection = (section: string) => {
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(section)) {
-      newExpanded.delete(section);
-    } else {
-      newExpanded.add(section);
+    setExpandedSections(prev => {
+      const copy = new Set(prev);
+      copy.has(section) ? copy.delete(section) : copy.add(section);
+      return copy;
+    });
+  };
+
+  const getProfileColor = (profileId: string) => {
+    const profile = lintProfiles.find(p => p.id === profileId);
+    return profile?.color || 'from-blue-500 to-cyan-400';
+  };
+
+  const getValidationStatusIcon = () => {
+    if (loading) {
+      return <ArrowPathIcon className="w-5 h-5 text-blue-400 animate-spin" />;
     }
-    setExpandedSections(newExpanded);
-  };
-
-  const addCustomRule = () => {
-    if (newCustomRule.trim() && validationConfig && setValidationConfig) {
-      const updatedRules = [...(validationConfig.customRules || []), newCustomRule.trim()];
-      setValidationConfig({
-        ...validationConfig,
-        customRules: updatedRules
-      });
-      setNewCustomRule("");
-      setShowAddRule(false);
+    if (!validationResult) {
+      return <ClockIcon className="w-5 h-5 text-slate-400" />;
     }
+    return validationResult.passed 
+      ? <CheckCircleIcon className="w-5 h-5 text-green-400" />
+      : <XCircleIcon className="w-5 h-5 text-red-400" />;
   };
 
-  const removeCustomRule = (index: number) => {
-    if (validationConfig && setValidationConfig) {
-      const updatedRules = (validationConfig.customRules || []).filter((_, i) => i !== index);
-      setValidationConfig({
-        ...validationConfig,
-        customRules: updatedRules
-      });
-    }
-  };
-
-  const applyPreset = (preset: any) => {
-    if (setValidationConfig) {
-      setValidationConfig({
-        ...validationConfig,
-        ...preset.checks
-      });
-    }
-  };
-
-  const getScoreColor = (score?: number) => {
-    if (!score) return 'from-slate-500 to-slate-600';
-    if (score >= 90) return 'from-green-500 to-emerald-400';
-    if (score >= 70) return 'from-yellow-500 to-orange-400';
-    return 'from-red-500 to-pink-400';
-  };
-
-  const getCheckIcon = (enabled: boolean) => {
-    return enabled ? (
-      <CheckCircleIcon className="w-4 h-4 text-green-400" />
-    ) : (
-      <div className="w-4 h-4 border-2 border-slate-600 rounded-full"></div>
-    );
+  const getValidationSummary = () => {
+    if (!validationResult) return null;
+    
+    const issues = validationResult.issues || [];
+    const errors = issues.filter((i: any) => i.severity === 'error' || i.level === 'error').length;
+    const warnings = issues.filter((i: any) => i.severity === 'warning' || i.level === 'warning').length;
+    
+    return { errors, warnings, total: issues.length };
   };
 
   return (
@@ -135,402 +133,274 @@ export default function ValidationSidebar({
               <ShieldCheckIcon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-white">Validation Suite</h3>
-              <p className="text-xs text-slate-400">Ansible Quality Checks</p>
+              <h3 className="font-bold text-white">Playbook Validation</h3>
+              <p className="text-xs text-slate-400">Ansible Lint & Quality</p>
             </div>
           </div>
         </div>
 
-        {/* Quick Presets */}
+        {/* Validation Status */}
         <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
-          <div className="flex items-center space-x-2 mb-3">
-            <AdjustmentsHorizontalIcon className="w-4 h-4 text-slate-400" />
-            <h4 className="font-semibold text-slate-200 text-sm">Quick Presets</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold text-slate-200 text-sm flex items-center space-x-2">
+              {getValidationStatusIcon()}
+              <span>Validation Status</span>
+            </h4>
           </div>
           
-          <div className="grid grid-cols-2 gap-2">
-            {validationPresets.map((preset, index) => (
-              <button
-                key={index}
-                onClick={() => applyPreset(preset)}
-                className="p-2 text-xs rounded-lg border border-slate-600/50 bg-slate-700/30 text-slate-300 hover:bg-slate-600/50 hover:text-white transition-colors text-center"
-              >
-                {preset.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Validation Checks Configuration */}
-        <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
-          <button
-            onClick={() => toggleSection('checks')}
-            className="flex items-center justify-between w-full mb-3 group"
-          >
-            <div className="flex items-center space-x-2">
-              <Cog6ToothIcon className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
-              <h4 className="font-semibold text-slate-200 text-sm group-hover:text-white transition-colors">
-                Validation Checks
-              </h4>
-            </div>
-            <div className="text-slate-400 group-hover:text-white transition-colors">
-              {expandedSections.has('checks') ? '−' : '+'}
-            </div>
-          </button>
-          
-          {expandedSections.has('checks') && (
-            <div className="space-y-4">
-              {/* Syntax Check */}
-              <label className="flex items-center justify-between cursor-pointer group">
-                <div className="flex items-center space-x-3">
-                  <BugAntIcon className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors" />
-                  <div>
-                    <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
-                      Syntax Validation
-                    </span>
-                    <p className="text-xs text-slate-500">Check YAML syntax and Ansible structure</p>
-                  </div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={validationConfig?.checkSyntax || false}
-                    onChange={(e) => handleConfigChange('checkSyntax', e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
-                </label>
-              </label>
-
-              {/* Security Scan */}
-              <label className="flex items-center justify-between cursor-pointer group">
-                <div className="flex items-center space-x-3">
-                  <LockClosedIcon className="w-4 h-4 text-slate-400 group-hover:text-red-400 transition-colors" />
-                  <div>
-                    <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
-                      Security Scan
-                    </span>
-                    <p className="text-xs text-slate-500">Detect security vulnerabilities and risks</p>
-                  </div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={validationConfig?.securityScan || false}
-                    onChange={(e) => handleConfigChange('securityScan', e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500"></div>
-                </label>
-              </label>
-
-              {/* Performance Check */}
-              <label className="flex items-center justify-between cursor-pointer group">
-                <div className="flex items-center space-x-3">
-                  <CpuChipIcon className="w-4 h-4 text-slate-400 group-hover:text-green-400 transition-colors" />
-                  <div>
-                    <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
-                      Performance Analysis
-                    </span>
-                    <p className="text-xs text-slate-500">Optimize execution speed and efficiency</p>
-                  </div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={validationConfig?.performanceCheck || false}
-                    onChange={(e) => handleConfigChange('performanceCheck', e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
-                </label>
-              </label>
-
-              {/* Best Practices */}
-              <label className="flex items-center justify-between cursor-pointer group">
-                <div className="flex items-center space-x-3">
-                  <DocumentCheckIcon className="w-4 h-4 text-slate-400 group-hover:text-yellow-400 transition-colors" />
-                  <div>
-                    <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
-                      Best Practices
-                    </span>
-                    <p className="text-xs text-slate-500">Follow Ansible community guidelines</p>
-                  </div>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={validationConfig?.bestPractices || false}
-                    onChange={(e) => handleConfigChange('bestPractices', e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500"></div>
-                </label>
-              </label>
-            </div>
-          )}
-        </div>
-
-        {/* Custom Rules */}
-        <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
-          <button
-            onClick={() => toggleSection('rules')}
-            className="flex items-center justify-between w-full mb-3 group"
-          >
-            <div className="flex items-center space-x-2">
-              <ClipboardDocumentListIcon className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
-              <h4 className="font-semibold text-slate-200 text-sm group-hover:text-white transition-colors">
-                Custom Rules
-              </h4>
-            </div>
-            <div className="text-slate-400 group-hover:text-white transition-colors">
-              {expandedSections.has('rules') ? '−' : '+'}
-            </div>
-          </button>
-          
-          {expandedSections.has('rules') && (
+          {validationResult ? (
             <div className="space-y-3">
-              {/* Existing Custom Rules */}
-              {validationConfig?.customRules && validationConfig.customRules.length > 0 ? (
-                <div className="space-y-2">
-                  {validationConfig.customRules.map((rule, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-slate-700/30 rounded border border-slate-600/30">
-                      <span className="text-xs text-slate-300 font-mono flex-1 truncate">
-                        {rule}
-                      </span>
-                      <button
-                        onClick={() => removeCustomRule(index)}
-                        className="ml-2 p-1 text-red-400 hover:text-red-300 transition-colors"
-                        title="Remove rule"
-                      >
-                        <TrashIcon className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-xs text-slate-500 text-center py-2">
-                  No custom rules defined
-                </div>
-              )}
-
-              {/* Add New Rule */}
-              {showAddRule ? (
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    value={newCustomRule}
-                    onChange={(e) => setNewCustomRule(e.target.value)}
-                    placeholder="Enter rule name (e.g., no-debug-tasks)"
-                    className="w-full p-2 text-xs rounded border border-slate-600/50 bg-slate-700/50 text-slate-200 placeholder-slate-500 focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/25"
-                    onKeyPress={(e) => e.key === 'Enter' && addCustomRule()}
-                  />
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={addCustomRule}
-                      className="flex-1 py-1 px-2 text-xs bg-green-500/20 text-green-300 border border-green-500/30 rounded hover:bg-green-500/30 transition-colors"
-                    >
-                      Add Rule
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowAddRule(false);
-                        setNewCustomRule("");
-                      }}
-                      className="flex-1 py-1 px-2 text-xs bg-slate-600/50 text-slate-300 border border-slate-600/50 rounded hover:bg-slate-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowAddRule(true)}
-                  className="w-full py-2 px-3 text-xs border-2 border-dashed border-slate-600/50 rounded text-slate-400 hover:border-blue-400/50 hover:text-blue-300 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                  <span>Add Custom Rule</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Validation Results Summary */}
-        {validationResult && (
-          <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <ShieldCheckIcon className="w-4 h-4 text-slate-400" />
-              <h4 className="font-semibold text-slate-200 text-sm">Last Validation</h4>
-            </div>
-            
-            {/* Quality Score */}
-            {validationResult.score && (
-              <div className="mb-4">
+              <div className={`p-3 rounded-lg border ${
+                validationResult.passed 
+                  ? 'bg-green-500/10 border-green-500/30' 
+                  : 'bg-red-500/10 border-red-500/30'
+              }`}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-slate-400">Quality Score</span>
-                  <span className="text-sm font-bold text-white">
-                    {validationResult.score}/100
+                  <span className={`font-medium text-sm ${
+                    validationResult.passed ? 'text-green-300' : 'text-red-300'
+                  }`}>
+                    {validationResult.passed ? 'PASSED' : 'FAILED'}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {validationResult.debug_info?.playbook_length || 0} chars
                   </span>
                 </div>
-                <div className="w-full bg-slate-700 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full bg-gradient-to-r ${getScoreColor(validationResult.score)} transition-all duration-500`}
-                    style={{ width: `${validationResult.score}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
-
-            {/* Issue Breakdown */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-red-500/10 border border-red-500/30 rounded p-2 text-center">
-                <div className="text-red-300 font-bold text-sm">{validationResult.summary.errors}</div>
-                <div className="text-red-400/80 text-xs">Errors</div>
-              </div>
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-2 text-center">
-                <div className="text-yellow-300 font-bold text-sm">{validationResult.summary.warnings}</div>
-                <div className="text-yellow-400/80 text-xs">Warnings</div>
-              </div>
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2 text-center">
-                <div className="text-blue-300 font-bold text-sm">{validationResult.summary.info}</div>
-                <div className="text-blue-400/80 text-xs">Info</div>
-              </div>
-              <div className="bg-green-500/10 border border-green-500/30 rounded p-2 text-center">
-                <div className="text-green-300 font-bold text-sm">{validationResult.summary.suggestions}</div>
-                <div className="text-green-400/80 text-xs">Tips</div>
+                
+                {(() => {
+                  const summary = getValidationSummary();
+                  return summary && (
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="text-center">
+                        <div className="text-red-400 font-bold">{summary.errors}</div>
+                        <div className="text-slate-500">Errors</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-yellow-400 font-bold">{summary.warnings}</div>
+                        <div className="text-slate-500">Warnings</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-slate-300 font-bold">{summary.total}</div>
+                        <div className="text-slate-500">Total</div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
+          ) : (
+            <div className="text-center py-4">
+              <ClockIcon className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+              <p className="text-sm text-slate-400">No validation run yet</p>
+              <p className="text-xs text-slate-500">Click validate to start</p>
+            </div>
+          )}
+        </div>
 
-            {/* Status Badge */}
-            <div className="mt-3 flex items-center justify-center">
-              <div className={`px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm ${
-                validationResult.summary.errors > 0 
-                  ? 'bg-red-500/20 text-red-300 border-red-400/40'
-                  : validationResult.summary.warnings > 0
-                  ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/40'
-                  : 'bg-green-500/20 text-green-300 border-green-400/40'
-              }`}>
-                {validationResult.summary.errors > 0 
-                  ? 'Critical Issues Found'
-                  : validationResult.summary.warnings > 0
-                  ? 'Review Recommended'
-                  : 'Validation Passed'}
+        {/* Validation Profile */}
+        <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
+          <button
+            onClick={() => toggleSection('profile')}
+            className="flex items-center justify-between w-full mb-4"
+          >
+            <h4 className="font-semibold text-slate-200 text-sm flex items-center space-x-2">
+              <DocumentTextIcon className="w-4 h-4 text-slate-400" />
+              <span>Lint Profile</span>
+            </h4>
+            <span className="text-slate-400">
+              {expandedSections.has('profile') ? '−' : '+'}
+            </span>
+          </button>
+          
+          {expandedSections.has('profile') && (
+            <div className="space-y-3">
+              {lintProfiles.map((profile) => (
+                <label key={profile.id} className="block cursor-pointer group">
+                  <div className={`p-3 rounded-lg border transition-all ${
+                    selectedProfile === profile.id
+                      ? 'border-blue-400/50 bg-blue-500/10'
+                      : 'border-slate-600/50 hover:border-slate-500/50 bg-slate-700/30'
+                  }`}>
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="radio"
+                        name="profile"
+                        value={profile.id}
+                        checked={selectedProfile === profile.id}
+                        onChange={(e) => setSelectedProfile(e.target.value)}
+                        className="w-4 h-4 text-blue-500 bg-slate-700 border-slate-600"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-slate-200">
+                            {profile.name}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {profile.rules} rules
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {profile.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`h-1 rounded-full bg-gradient-to-r ${profile.color} mt-2 opacity-60`}></div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Validation Configuration */}
+        <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
+          <button
+            onClick={() => toggleSection('config')}
+            className="flex items-center justify-between w-full mb-4"
+          >
+            <h4 className="font-semibold text-slate-200 text-sm flex items-center space-x-2">
+              <Cog6ToothIcon className="w-4 h-4 text-slate-400" />
+              <span>Validation Options</span>
+            </h4>
+            <span className="text-slate-400">
+              {expandedSections.has('config') ? '−' : '+'}
+            </span>
+          </button>
+          
+          {expandedSections.has('config') && (
+            <div className="space-y-4">
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={validationConfig.checkSyntax}
+                  onChange={(e) => handleConfigChange('checkSyntax', e.target.checked)}
+                  className="w-4 h-4 text-blue-500 bg-slate-700 border-slate-600 rounded"
+                />
+                <div className="flex items-center space-x-2 flex-1">
+                  <BugAntIcon className="w-4 h-4 text-slate-400" />
+                  <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+                    Syntax Check
+                  </span>
+                </div>
+              </label>
+
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={validationConfig.securityScan}
+                  onChange={(e) => handleConfigChange('securityScan', e.target.checked)}
+                  className="w-4 h-4 text-blue-500 bg-slate-700 border-slate-600 rounded"
+                />
+                <div className="flex items-center space-x-2 flex-1">
+                  <KeyIcon className="w-4 h-4 text-slate-400" />
+                  <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+                    Security Scan
+                  </span>
+                </div>
+              </label>
+
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={validationConfig.performanceCheck}
+                  onChange={(e) => handleConfigChange('performanceCheck', e.target.checked)}
+                  className="w-4 h-4 text-blue-500 bg-slate-700 border-slate-600 rounded"
+                />
+                <div className="flex items-center space-x-2 flex-1">
+                  <FireIcon className="w-4 h-4 text-slate-400" />
+                  <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+                    Performance Check
+                  </span>
+                </div>
+              </label>
+
+              <label className="flex items-center space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={validationConfig.bestPractices}
+                  onChange={(e) => handleConfigChange('bestPractices', e.target.checked)}
+                  className="w-4 h-4 text-blue-500 bg-slate-700 border-slate-600 rounded"
+                />
+                <div className="flex items-center space-x-2 flex-1">
+                  <SparklesIcon className="w-4 h-4 text-slate-400" />
+                  <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
+                    Best Practices
+                  </span>
+                </div>
+              </label>
+            </div>
+          )}
+        </div>
+
+        {/* Validation Stats */}
+        <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
+          <h4 className="font-semibold text-slate-200 text-sm mb-4 flex items-center space-x-2">
+            <ChartBarIcon className="w-4 h-4 text-slate-400" />
+            <span>Validation Stats</span>
+          </h4>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center">
+              <div className="text-blue-400 text-lg font-bold">{validationStats.totalRuns}</div>
+              <div className="text-xs text-slate-400">Total Runs</div>
+            </div>
+            <div className="text-center">
+              <div className="text-green-400 text-lg font-bold">{validationStats.successRate}%</div>
+              <div className="text-xs text-slate-400">Success Rate</div>
+            </div>
+            <div className="text-center">
+              <div className="text-yellow-400 text-lg font-bold">{validationStats.avgIssues}</div>
+              <div className="text-xs text-slate-400">Avg Issues</div>
+            </div>
+            <div className="text-center">
+              <div className="text-slate-300 text-lg font-bold">
+                {validationStats.lastRun ? validationStats.lastRun.toLocaleDateString() : 'Never'}
               </div>
+              <div className="text-xs text-slate-400">Last Run</div>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Quick Action Button */}
-        {onValidate && (
-          <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
+        {/* Quick Actions - Removed validation button, keeping only reset */}
+        <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
+          <h4 className="font-semibold text-slate-200 text-sm mb-4">Quick Actions</h4>
+          
+          <div className="space-y-3">
             <button
-              onClick={onValidate}
-              disabled={loading}
-              className={`w-full py-3 rounded-lg font-medium text-sm transition-all duration-300 transform ${
-                loading 
-                  ? "bg-gradient-to-r from-purple-500/50 to-pink-500/50 cursor-not-allowed scale-95" 
-                  : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 hover:scale-105 text-white shadow-lg"
-              }`}
+              className="w-full py-2 rounded-lg font-medium text-sm bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-white transition-all duration-300 border border-slate-600/50"
+              onClick={() => {
+                // Reset validation result
+                window.location.reload();
+              }}
             >
-              <div className="flex items-center justify-center space-x-2">
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Validating...</span>
-                  </>
-                ) : (
-                  <>
-                    <PlayIcon className="w-4 h-4" />
-                    <span>Run Validation</span>
-                  </>
-                )}
-              </div>
+              Reset & Start Over
             </button>
           </div>
-        )}
+        </div>
 
-        {/* Validation Process Indicator */}
+        {/* Validation Pipeline Indicator */}
         <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
           <h4 className="font-semibold text-slate-200 text-sm mb-3">Validation Pipeline</h4>
           <div className="space-y-2">
             {[
-              { step: 'Analyze', status: 'completed', color: 'bg-green-400' },
-              { step: 'Context', status: 'completed', color: 'bg-green-400' },
-              { step: 'Convert', status: 'completed', color: 'bg-green-400' },
-              { step: 'Validate', status: 'active', color: 'bg-purple-400 animate-pulse' },
-              { step: 'Deploy', status: 'pending', color: 'bg-slate-600' },
+              { step: 'Syntax', status: validationConfig.checkSyntax ? 'enabled' : 'disabled', color: validationConfig.checkSyntax ? 'bg-green-400' : 'bg-slate-600' },
+              { step: 'Security', status: validationConfig.securityScan ? 'enabled' : 'disabled', color: validationConfig.securityScan ? 'bg-blue-400' : 'bg-slate-600' },
+              { step: 'Performance', status: validationConfig.performanceCheck ? 'enabled' : 'disabled', color: validationConfig.performanceCheck ? 'bg-yellow-400' : 'bg-slate-600' },
+              { step: 'Best Practices', status: validationConfig.bestPractices ? 'enabled' : 'disabled', color: validationConfig.bestPractices ? 'bg-purple-400' : 'bg-slate-600' },
             ].map((item, index) => (
               <div key={index} className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+                <div className={`w-3 h-3 rounded-full ${item.color} ${loading && item.status === 'enabled' ? 'animate-pulse' : ''}`}></div>
                 <span className={`text-xs ${
-                  item.status === 'active' ? 'text-purple-300 font-medium' :
-                  item.status === 'completed' ? 'text-green-300' : 'text-slate-500'
+                  item.status === 'enabled' ? 'text-slate-300' : 'text-slate-500'
                 }`}>
                   {item.step}
                 </span>
+                <span className={`text-xs ml-auto ${
+                  item.status === 'enabled' ? 'text-green-400' : 'text-slate-500'
+                }`}>
+                  {item.status}
+                </span>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Configuration Summary */}
-        <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
-          <div className="flex items-center space-x-2 mb-3">
-            <InformationCircleIcon className="w-4 h-4 text-slate-400" />
-            <h4 className="font-semibold text-slate-200 text-sm">Active Configuration</h4>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">Syntax Check:</span>
-              {getCheckIcon(validationConfig?.checkSyntax || false)}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">Security Scan:</span>
-              {getCheckIcon(validationConfig?.securityScan || false)}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">Performance:</span>
-              {getCheckIcon(validationConfig?.performanceCheck || false)}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">Best Practices:</span>
-              {getCheckIcon(validationConfig?.bestPractices || false)}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">Custom Rules:</span>
-              <span className="text-xs font-medium text-blue-300">
-                {validationConfig?.customRules?.length || 0}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Help & Tips */}
-        <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
-          <div className="flex items-center space-x-2 mb-3">
-            <InformationCircleIcon className="w-4 h-4 text-blue-400" />
-            <h4 className="font-semibold text-slate-200 text-sm">Validation Tips</h4>
-          </div>
-          
-          <div className="space-y-2 text-xs text-slate-400">
-            <div className="flex items-start space-x-2">
-              <div className="w-1 h-1 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-              <p>Enable all checks for production playbooks</p>
-            </div>
-            <div className="flex items-start space-x-2">
-              <div className="w-1 h-1 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
-              <p>Custom rules help enforce team standards</p>
-            </div>
-            <div className="flex items-start space-x-2">
-              <div className="w-1 h-1 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-              <p>Fix errors before warnings for best results</p>
-            </div>
-            <div className="flex items-start space-x-2">
-              <div className="w-1 h-1 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-              <p>Higher quality scores indicate better playbooks</p>
-            </div>
           </div>
         </div>
       </div>

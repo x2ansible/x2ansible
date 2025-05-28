@@ -1,118 +1,71 @@
-import json
 import uuid
-from pathlib import Path
-from llama_stack_client import LlamaStackClient, RAGDocument
+import logging
+from llama_stack_client import LlamaStackClient, Agent
+
+logger = logging.getLogger("ContextAgent")
 
 class ContextAgent:
-    def __init__(
-        self,
-        base_url,
-        vector_db_id,
-        docs_folder="docs",
-        embedding_model="all-MiniLM-L6-v2",
-        embedding_dim=384,
-        chunk_size=512,
-    ):
+    def __init__(self, base_url, model, vector_db_id):
         self.client = LlamaStackClient(base_url=base_url)
+        self.model = model
         self.vector_db_id = vector_db_id
-        self.docs_folder = Path(docs_folder)
-        self.embedding_model = embedding_model
-        self.embedding_dim = embedding_dim
-        self.chunk_size = chunk_size
-        self._vector_db_ensured = False
-        self._ingested = False
-
-    def ensure_vector_db(self):
-        # Use the proper high-level method to list vector DBs
-        response = self.client.vector_dbs.list()
-        existing = []
-        
-        for db in response:
-            if hasattr(db, 'identifier'):
-                existing.append(db.identifier)
-            elif isinstance(db, dict) and "identifier" in db:
-                existing.append(db["identifier"])
-            elif isinstance(db, dict) and "vector_db_id" in db:
-                existing.append(db["vector_db_id"])
-            elif isinstance(db, str):
-                existing.append(db)
-                
-        if self.vector_db_id not in existing:
-            # Use the proper high-level method to register vector DB
-            self.client.vector_dbs.register(
-                vector_db_id=self.vector_db_id,
-                embedding_model=self.embedding_model,
-                embedding_dimension=self.embedding_dim,
-                provider_id="faiss"
-            )
-
-    def ingest_documents(self):
-        folder = self.docs_folder / self.vector_db_id
-        if not folder.exists():
-            return
-            
-        documents = []
-        for file in folder.rglob("*"):
-            if file.suffix.lower() in {".jsonl", ".md", ".txt", ".adoc", ".yaml", ".yml"}:
-                try:
-                    if file.suffix == ".jsonl":
-                        with open(file, "r", encoding="utf-8") as f:
-                            for line in f:
-                                obj = json.loads(line)
-                                documents.append(RAGDocument(
-                                    document_id=str(uuid.uuid4()),
-                                    content=obj["text"],
-                                    metadata=obj.get("metadata", {"filename": file.name}),
-                                    mime_type="text/plain"
-                                ))
-                    else:
-                        content = file.read_text(encoding="utf-8")
-                        documents.append(RAGDocument(
-                            document_id=str(uuid.uuid4()),
-                            content=content,
-                            metadata={"filename": file.name},
-                            mime_type="text/plain"
-                        ))
-                except Exception:
-                    continue
-                    
-        if documents:
-            # Use the proper high-level method
-            self.client.tool_runtime.rag_tool.insert(
-                vector_db_id=self.vector_db_id,
-                documents=documents,
-                chunk_size_in_tokens=self.chunk_size
-            )
-
-    def _ensure_setup(self):
-        if not self._vector_db_ensured:
-            self.ensure_vector_db()
-            self._vector_db_ensured = True
-        if not self._ingested:
-            self.ingest_documents()
-            self._ingested = True
-
-    def ingest_document(self, content, filename, mime_type="text/plain"):
-        self._ensure_setup()
-        doc = RAGDocument(
-            document_id=str(uuid.uuid4()),
-            content=content,
-            metadata={"filename": filename},
-            mime_type=mime_type
+        self.instructions = (
+            "You are a code analysis assistant whose sole job is to retrieve the most relevant, actionable context from the vector database "
+            "using the RAG knowledge_search tool for the given code or user question. "
+            "ALWAYS invoke the knowledge_search tool to look up matching patterns, best practices, or documentation for this input. "
+            "Do NOT answer or convert the code—just return retrieved context. "
+            "Deduplicate, remove boilerplate, and ensure only high-relevance content is returned. "
+            "If no relevant documents are found, reply: 'No relevant patterns found for this input.'"
         )
-        
-        # Use the proper high-level method
-        return self.client.tool_runtime.rag_tool.insert(
-            vector_db_id=self.vector_db_id,
-            documents=[doc],
-            chunk_size_in_tokens=self.chunk_size
+        self.agent = self._create_agent()
+
+    def _create_agent(self):
+        return Agent(
+            client=self.client,
+            model=self.model,
+            instructions=self.instructions,
+            sampling_params={"strategy": {"type": "greedy"}, "max_tokens": 4096},
+            tools=[{
+                "name": "builtin::rag",
+                "args": {"vector_db_ids": [self.vector_db_id]},
+            }],
         )
 
-    def query_context(self, query, top_k=5):
-        self._ensure_setup()
-        
-        # Use the proper high-level method
-        return self.client.tool_runtime.rag_tool.query(
-            content=query,
-            vector_db_ids=[self.vector_db_id]
+    def query_context(self, code, top_k=5):
+        logger.info(f"📬 Sending query to ContextAgent: {repr(code)[:200]}")
+        session_id = self.agent.create_session(f"context_session_{uuid.uuid4()}")
+        response = self.agent.create_turn(
+            messages=[{"role": "user", "content": code}],
+            session_id=session_id,
+            stream=False,
         )
+        steps = getattr(response, 'steps', [])
+        # Parse out only meaningful chunks from all tool responses
+        context_chunks = []
+        for step in steps:
+            for tool_response in getattr(step, "tool_responses", []):
+                content = getattr(tool_response, "content", None)
+                if isinstance(content, list):
+                    for item in content:
+                        if hasattr(item, "text"):
+                            text = item.text.strip()
+                            if (
+                                text
+                                and not text.startswith(("knowledge_search tool found", "BEGIN", "END", "The above results"))
+                            ):
+                                context_chunks.append(text)
+                elif isinstance(content, str):
+                    text = content.strip()
+                    if text:
+                        context_chunks.append(text)
+        # As a last resort, append the top-level LLM output if nothing else
+        top_content = getattr(response, "content", "").strip()
+        if top_content and not context_chunks:
+            context_chunks.append(top_content)
+        # Output as a list of dicts for UI compatibility
+        context_list = [{"text": chunk} for chunk in context_chunks if chunk]
+        logger.info(f"✅ ContextAgent returned {len(context_list)} chunks")
+        return {
+            "context": context_list,
+            "steps": steps
+        }

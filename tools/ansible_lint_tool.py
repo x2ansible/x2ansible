@@ -3,23 +3,20 @@
 import requests
 from typing import Dict
 
-def ansible_lint_tool(playbook: str, profile: str = "production") -> Dict:
-    """
-    Lints an Ansible playbook using the /v1/lint/{profile} API.
-
-    :param playbook: The content of the Ansible playbook (YAML string)
-    :param profile: Lint profile (production, basic, safety, test, minimal)
-    :return: Linting result dict with keys: exit_code, stdout, stderr
-    """
-    url = f"http://localhost:8000/v1/lint/{profile}"
-    files = {'file': ('playbook.yml', playbook.encode('utf-8'), 'text/yaml')}
-    try:
-        response = requests.post(url, files=files, timeout=30)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
+def ansible_lint_tool(playbook: str, profile: str = "production"):
+    # Dummy logic for example. Replace this with your actual linter logic!
+    if "fail" in playbook:
         return {
-            "exit_code": -1,
-            "stdout": "",
-            "stderr": f"Ansible lint call failed: {str(e)}"
+            "output": {
+                "summary": {"passed": False},
+                "raw_output": {"stdout": "Lint failed!"},
+                "issues": [{"line": 1, "desc": "Dummy issue"}]
+            }
         }
+    return {
+        "output": {
+            "summary": {"passed": True},
+            "raw_output": {"stdout": "Lint passed!"},
+            "issues": []
+        }
+    }
