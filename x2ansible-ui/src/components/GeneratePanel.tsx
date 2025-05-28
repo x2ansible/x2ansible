@@ -67,15 +67,11 @@ export default function GeneratePanel({
     onLogMessage?.(msg);
   }, [onLogMessage]);
 
-  // Auto-generate spec when context is available - SIMPLIFIED to prevent loops
   useEffect(() => {
     if (!context || !classificationResult || specText) return;
-    
-    // Simple fallback spec text instead of API call to prevent loops
     setSpecText("Generated requirements based on your infrastructure code and context analysis. You can edit these requirements before generating the playbook.");
-  }, [context, classificationResult]); // Minimal dependencies
+  }, [context, classificationResult]);
 
-  // Streaming animation logic
   const startStreaming = useCallback((fullText: string) => {
     setPanelMode('generating');
     setStreamingState({
@@ -123,7 +119,6 @@ export default function GeneratePanel({
     logMessage("⏹️ Streaming stopped");
   }, [logMessage]);
 
-  // Generation Handler
   const handleGenerate = useCallback(async () => {
     if (!code.trim()) {
       setError("No input code provided");
@@ -135,11 +130,10 @@ export default function GeneratePanel({
     setPlaybook("");
     setStreamingState({ isStreaming: false, currentText: '', fullText: '', currentIndex: 0 });
     logMessage("🚀 Starting playbook generation...");
-    
     try {
       const payload = {
         input_code: code,
-        context: specText || context // Use edited spec or fallback to context
+        context: specText || context
       };
       const response = await fetch(`${BACKEND_URL}/api/generate`, {
         method: "POST",
@@ -177,10 +171,8 @@ export default function GeneratePanel({
     }
   }, [logMessage]);
 
-  // Main render with improved UX
   return (
     <div ref={panelRef} className="h-full w-full flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Error State */}
       {error && (
         <div className="mx-6 my-4 p-4 bg-gradient-to-r from-red-500/15 to-pink-500/15 border border-red-500/40 rounded-xl backdrop-blur-sm shadow-lg">
           <div className="flex items-start space-x-3">
@@ -201,8 +193,8 @@ export default function GeneratePanel({
         </div>
       )}
 
-      <div className="flex-1 p-4 lg:p-6 min-h-0 overflow-y-auto scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
-        {/* Header Section - Always Visible */}
+      {/* MAIN SCROLL PANEL */}
+      <div className="flex-1 p-4 lg:p-6 min-h-0 overflow-y-auto context-sidebar-scrollbar">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-400 rounded-2xl flex items-center justify-center shadow-lg">
@@ -215,8 +207,6 @@ export default function GeneratePanel({
               </p>
             </div>
           </div>
-          
-          {/* Action Buttons */}
           <div className="flex items-center space-x-3">
             {hasGenerated && (
               <button
@@ -258,7 +248,6 @@ export default function GeneratePanel({
           </div>
         </div>
 
-        {/* Analysis Summary - Collapsible */}
         {classificationResult && (
           <div className="mb-6">
             <button
@@ -321,7 +310,6 @@ export default function GeneratePanel({
           </div>
         )}
 
-        {/* Requirements Section - Show when editing or no playbook yet */}
         {(panelMode === 'editing' || !hasGenerated) && (
           <div className="mb-6">
             <div className="bg-slate-800/50 rounded-xl border border-slate-600/30 p-4">
@@ -345,7 +333,6 @@ export default function GeneratePanel({
           </div>
         )}
 
-        {/* Playbook Output */}
         {(panelMode === 'generating' || panelMode === 'complete') && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -410,7 +397,7 @@ export default function GeneratePanel({
               {(streamingState.currentText || playbook) ? (
                 <pre 
                   ref={codeCanvasRef}
-                  className="p-6 bg-slate-900/60 text-slate-100 font-mono text-sm leading-relaxed overflow-auto max-h-96 lg:max-h-[500px] scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600"
+                  className="p-6 bg-slate-900/60 text-slate-100 font-mono text-sm leading-relaxed overflow-auto max-h-96 lg:max-h-[500px] context-sidebar-scrollbar"
                   style={{ 
                     fontFamily: 'Monaco, Menlo, "Ubuntu Mono", Consolas, monospace',
                     tabSize: 2
@@ -436,7 +423,6 @@ export default function GeneratePanel({
           </div>
         )}
 
-        {/* Ready State - When no context yet */}
         {!context && !classificationResult && (
           <div className="text-center py-16">
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
@@ -453,6 +439,7 @@ export default function GeneratePanel({
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

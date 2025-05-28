@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { 
-  ShieldCheckIcon, 
-  ExclamationTriangleIcon, 
-  CheckCircleIcon, 
+import {
+  ShieldCheckIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
   XCircleIcon,
   ClipboardDocumentIcon,
   ChevronDownIcon,
@@ -11,6 +11,8 @@ import {
   DocumentTextIcon,
   Cog6ToothIcon
 } from "@heroicons/react/24/outline";
+
+// --- Interfaces ---
 
 interface ValidationPanelProps {
   playbook?: string;
@@ -29,20 +31,26 @@ interface ValidationIssue {
   level?: string;
   tag?: string[];
   description?: string;
+  [key: string]: any;
 }
 
 interface ValidationResult {
   passed: boolean;
-  summary: string;
+  summary: any; // can be string or object depending on backend
   issues: ValidationIssue[];
-  raw_output: string;
+  raw_output: string | { stdout?: string; stderr?: string };
   debug_info: {
-    status: string;
-    playbook_length: number;
-    num_issues: number;
+    status?: string;
+    playbook_length?: number;
+    num_issues?: number;
+    error_count?: number;
+    warning_count?: number;
+    info_count?: number;
     [key: string]: any;
   };
 }
+
+// --- Main Panel ---
 
 const ValidationPanel: React.FC<ValidationPanelProps> = ({
   playbook = "",
@@ -69,18 +77,13 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
   );
 
   useEffect(() => {
-    console.log("🔍 ValidationPanel - Props changed:");
-    console.log("  - playbook length:", playbook?.length || 0);
-    console.log("  - playbook preview:", playbook?.substring(0, 100) || "EMPTY");
-    console.log("  - validationConfig:", validationConfig);
-    console.log("  - onLogMessage:", !!onLogMessage);
-    console.log("  - onValidationComplete:", !!onValidationComplete);
-    
     if (!hasLoggedInit.current && playbook && playbook.trim()) {
       logMessage("🛡️ Validation Panel initialized");
       hasLoggedInit.current = true;
     }
   }, [logMessage, playbook, validationConfig, onLogMessage, onValidationComplete]);
+
+  // --- UI Helper Functions ---
 
   const toggleIssueExpansion = (index: number) => {
     setExpandedIssues((prev) => {
@@ -101,14 +104,11 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
 
   const getSeverityIcon = (severity: string) => {
     switch (severity?.toLowerCase()) {
-      case 'error':
-      case 'high':
+      case 'error': case 'high':
         return <XCircleIcon className="w-4 h-4 text-red-400" />;
-      case 'warning':
-      case 'medium':
+      case 'warning': case 'medium':
         return <ExclamationTriangleIcon className="w-4 h-4 text-yellow-400" />;
-      case 'info':
-      case 'low':
+      case 'info': case 'low':
         return <CheckCircleIcon className="w-4 h-4 text-blue-400" />;
       default:
         return <ExclamationTriangleIcon className="w-4 h-4 text-slate-400" />;
@@ -117,14 +117,11 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
 
   const getSeverityColor = (severity: string) => {
     switch (severity?.toLowerCase()) {
-      case 'error':
-      case 'high':
+      case 'error': case 'high':
         return 'from-red-500/10 to-pink-500/10 border-red-500/30';
-      case 'warning':
-      case 'medium':
+      case 'warning': case 'medium':
         return 'from-yellow-500/10 to-orange-500/10 border-yellow-500/30';
-      case 'info':
-      case 'low':
+      case 'info': case 'low':
         return 'from-blue-500/10 to-cyan-500/10 border-blue-500/30';
       default:
         return 'from-slate-500/10 to-slate-600/10 border-slate-500/30';
@@ -133,31 +130,22 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
 
   const getProfileColor = (profile: string) => {
     switch (profile) {
-      case 'basic':
-        return 'from-green-500 to-emerald-400';
-      case 'moderate':
-        return 'from-yellow-500 to-orange-400';
-      case 'production':
-        return 'from-red-500 to-pink-400';
-      default:
-        return 'from-blue-500 to-cyan-400';
+      case 'basic': return 'from-green-500 to-emerald-400';
+      case 'moderate': return 'from-yellow-500 to-orange-400';
+      case 'production': return 'from-red-500 to-pink-400';
+      default: return 'from-blue-500 to-cyan-400';
     }
   };
 
+  // --- Validation Action ---
+
   const handleValidation = async () => {
-    console.log("🎯 BUTTON CLICKED - handleValidation called!");
-    console.log("🔍 Playbook exists:", !!playbook);
-    console.log("🔍 Playbook length:", playbook?.length || 0);
-    console.log("🔍 Loading state:", loading);
-    
     if (!playbook || !playbook.trim()) {
-      console.log("❌ No playbook - early return");
       setError("No playbook to validate");
       logMessage("❌ Error: No playbook content");
       return;
     }
 
-    console.log("✅ Starting validation process...");
     setLoading(true);
     setResult(null);
     setError(null);
@@ -166,276 +154,357 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
     const startTime = Date.now();
     try {
       logMessage(`🚀 Starting validation with ${lintProfile} profile...`);
-      console.log("🔍 Validation Debug:", {
-        playbookLength: playbook.length,
-        lintProfile,
-        playbookPreview: playbook.substring(0, 200) + "..."
-      });
-      
-      const requestBody = { 
-        playbook: playbook, 
-        lint_profile: lintProfile 
-      };
-      
-      console.log("📨 About to make fetch request...");
-      console.log("📨 Request body:", requestBody);
-      
       const response = await fetch("/api/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ playbook, lint_profile: lintProfile }),
       });
-
-      console.log("📥 Response received:", {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-      
-      logMessage(`📥 Response: HTTP ${response.status}`);
 
       let data: ValidationResult;
       try {
         const contentType = response.headers.get("content-type");
-        console.log("📄 Response content-type:", contentType);
-        
         if (contentType && contentType.includes("application/json")) {
           data = await response.json();
-          console.log("✅ Parsed JSON response:", data);
         } else {
-          const raw = await response.text();
-          console.error("❌ Non-JSON response:", raw);
-          throw new Error(`Backend did not return JSON: ${raw.slice(0, 200)}`);
+          throw new Error("Backend did not return JSON");
         }
       } catch (e) {
-        console.error("❌ Failed to parse response:", e);
         setError("Validation API did not return valid JSON. Try again.");
         setLoading(false);
         logMessage(`❌ Validation failed: ${e}`);
         return;
       }
 
-      const duration = Date.now() - startTime;
-      
       if (!response.ok) {
-        console.error("❌ API Error Response:", data);
-        throw new Error(data?.summary || data?.detail || `HTTP ${response.status}`);
+        throw new Error(typeof data?.summary === "string" ? data.summary : "Validation failed");
       }
 
-      console.log("✅ Validation successful:", data);
       setResult(data);
       setError(null);
       setLoading(false);
 
       const issueCount = data.issues?.length || 0;
       const status = data.passed ? "✅ PASSED" : "❌ FAILED";
-      
-      logMessage(`${status} Validation completed in ${duration}ms (${issueCount} issues found)`);
-      
-      if (onValidationComplete) {
-        console.log("📞 Calling onValidationComplete callback");
-        onValidationComplete(data);
-      } else {
-        console.log("⚠️ No onValidationComplete callback provided");
-      }
+      logMessage(`${status} Validation completed in ${Date.now() - startTime}ms (${issueCount} issues found)`);
+      if (onValidationComplete) onValidationComplete(data);
 
     } catch (err: any) {
-      console.error("❌ Validation error:", err);
       setError(err?.message || "Unknown validation error occurred.");
       setLoading(false);
       logMessage(`❌ Validation failed: ${err}`);
     }
   };
 
-  const renderValidationSummary = () => {
-    if (!result) return null;
+  // --- Render Functions ---
 
-    const { passed, issues, debug_info } = result;
-    const errorCount = issues?.filter(i => i.severity?.toLowerCase() === 'error' || i.level?.toLowerCase() === 'error').length || 0;
-    const warningCount = issues?.filter(i => i.severity?.toLowerCase() === 'warning' || i.level?.toLowerCase() === 'warning').length || 0;
-    const infoCount = issues?.filter(i => i.severity?.toLowerCase() === 'info' || i.level?.toLowerCase() === 'info').length || 0;
-
-    return (
-      <div className={`rounded-xl border p-4 ${
-        passed 
-          ? 'bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30' 
-          : 'bg-gradient-to-r from-red-500/10 to-pink-500/10 border-red-500/30'
-      }`}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-3">
-            {passed ? (
-              <CheckCircleIcon className="w-6 h-6 text-green-400" />
-            ) : (
-              <XCircleIcon className="w-6 h-6 text-red-400" />
-            )}
-            <div>
-              <h3 className={`font-bold text-lg ${passed ? 'text-green-300' : 'text-red-300'}`}>
-                {passed ? 'Validation Passed' : 'Validation Failed'}
-              </h3>
-              <p className="text-xs text-slate-400">
-                Profile: {lintProfile} • {debug_info?.playbook_length || 0} chars analyzed
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => copyToClipboard(JSON.stringify(result, null, 2))}
-            className="text-slate-400 hover:text-white transition-colors"
-            title="Copy validation result"
-          >
-            <ClipboardDocumentIcon className="w-5 h-5" />
-          </button>
-        </div>
-
-        {issues && issues.length > 0 && (
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div className="text-center">
-              <div className="text-red-400 text-2xl font-bold">{errorCount}</div>
-              <div className="text-xs text-slate-400">Errors</div>
-            </div>
-            <div className="text-center">
-              <div className="text-yellow-400 text-2xl font-bold">{warningCount}</div>
-              <div className="text-xs text-slate-400">Warnings</div>
-            </div>
-            <div className="text-center">
-              <div className="text-blue-400 text-2xl font-bold">{infoCount}</div>
-              <div className="text-xs text-slate-400">Info</div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderIssues = () => {
-    if (!result?.issues || result.issues.length === 0) return null;
-
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h4 className="font-semibold text-white flex items-center space-x-2">
-            <ExclamationTriangleIcon className="w-4 h-4 text-yellow-400" />
-            <span>Issues Found ({result.issues.length})</span>
-          </h4>
-          <button
-            onClick={() => copyToClipboard(result.issues.map(i => `${i.severity}: ${i.message}`).join('\n'))}
-            className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            Copy All Issues
-          </button>
-        </div>
-
-        <div className="max-h-96 overflow-y-auto pr-2 space-y-2">
-          {result.issues.map((issue, index) => {
-            const isExpanded = expandedIssues.has(index);
-            const severity = issue.severity || issue.level || 'info';
-            
-            return (
-              <div
-                key={index}
-                className={`rounded-lg border p-3 bg-gradient-to-r ${getSeverityColor(severity)}`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-3 flex-1">
-                    {getSeverityIcon(severity)}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className={`text-xs font-medium px-2 py-1 rounded ${
-                          severity.toLowerCase() === 'error' ? 'bg-red-500/20 text-red-300' :
-                          severity.toLowerCase() === 'warning' ? 'bg-yellow-500/20 text-yellow-300' :
-                          'bg-blue-500/20 text-blue-300'
-                        }`}>
-                          {severity.toUpperCase()}
-                        </span>
-                        {issue.rule && (
-                          <span className="text-xs text-slate-400 font-mono">
-                            {issue.rule}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <p className="text-sm text-slate-200 mb-2">
-                        {issue.message || issue.description || 'No description available'}
-                      </p>
-
-                      {(issue.line || issue.column || issue.filename) && (
-                        <div className="flex items-center space-x-4 text-xs text-slate-400">
-                          {issue.filename && (
-                            <span>📄 {issue.filename}</span>
-                          )}
-                          {issue.line && (
-                            <span>Line {issue.line}</span>
-                          )}
-                          {issue.column && (
-                            <span>Col {issue.column}</span>
-                          )}
-                        </div>
-                      )}
-
-                      {issue.tag && issue.tag.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {issue.tag.map((tag, tagIndex) => (
-                            <span
-                              key={tagIndex}
-                              className="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => toggleIssueExpansion(index)}
-                    className="text-slate-400 hover:text-white transition-colors ml-2"
-                  >
-                    {isExpanded ? (
-                      <ChevronDownIcon className="w-4 h-4" />
-                    ) : (
-                      <ChevronRightIcon className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-
-                {isExpanded && (
-                  <div className="mt-3 pt-3 border-t border-slate-600/30">
-                    <pre className="text-xs text-slate-300 overflow-x-auto bg-slate-800/50 p-2 rounded">
-                      {JSON.stringify(issue, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
+  // Lint Raw Output
   const renderRawOutput = () => {
-    if (!result?.raw_output || !showRawOutput) return null;
+    if (!result || !showRawOutput) return null;
+    const rawOutput = result.raw_output;
 
     return (
       <div className="bg-slate-800/50 rounded-lg border border-slate-600/30 p-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="font-semibold text-white flex items-center space-x-2">
             <DocumentTextIcon className="w-4 h-4 text-slate-400" />
-            <span>Raw Lint Output</span>
+            <span>Raw Lint Output (Debug)</span>
           </h4>
           <button
-            onClick={() => copyToClipboard(result.raw_output)}
+            onClick={() => copyToClipboard(
+              typeof rawOutput === "string"
+                ? rawOutput
+                : JSON.stringify(rawOutput, null, 2)
+            )}
             className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
           >
             Copy Output
           </button>
         </div>
-        <pre className="text-xs text-slate-300 overflow-auto max-h-64 bg-slate-900/50 p-3 rounded border">
-          {result.raw_output}
-        </pre>
+        <div className="space-y-4">
+          {(!rawOutput || (typeof rawOutput === "string" && rawOutput.trim() === "")) ? (
+            <div className="text-xs text-red-300 bg-slate-900/70 rounded p-3 border border-red-500/30">
+              No raw lint output was returned by the backend.
+            </div>
+          ) : (
+            <>
+              {typeof rawOutput === "object" && (
+                <>
+                  {rawOutput.stdout && (
+                    <div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <h5 className="text-sm font-medium text-green-300">Standard Output</h5>
+                      </div>
+                      <pre className="text-xs text-slate-300 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded border border-slate-600/30">
+                        {rawOutput.stdout || "[empty]"}
+                      </pre>
+                    </div>
+                  )}
+                  {rawOutput.stderr && (
+                    <div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                        <h5 className="text-sm font-medium text-red-300">Standard Error</h5>
+                      </div>
+                      <pre className="text-xs text-slate-300 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded border border-slate-600/30">
+                        {rawOutput.stderr || "[empty]"}
+                      </pre>
+                    </div>
+                  )}
+                  {!rawOutput.stdout && !rawOutput.stderr && (
+                    <div className="text-xs text-yellow-300 bg-slate-900/70 rounded p-3 border border-yellow-500/30">
+                      No stdout or stderr in raw_output.
+                    </div>
+                  )}
+                </>
+              )}
+              {typeof rawOutput === "string" && rawOutput.trim() && (
+                <div>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <h5 className="text-sm font-medium text-blue-300">Raw String</h5>
+                  </div>
+                  <pre className="text-xs text-slate-300 overflow-auto max-h-64 bg-slate-900/50 p-3 rounded border border-slate-600/30">
+                    {rawOutput}
+                  </pre>
+                </div>
+              )}
+            </>
+          )}
+          {/* Always show JSON for debugging */}
+          <div>
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+              <h5 className="text-sm font-medium text-purple-300">JSON Representation</h5>
+            </div>
+            <pre className="text-xs text-slate-300 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded border border-slate-600/30">
+              {JSON.stringify(rawOutput, null, 2)}
+            </pre>
+          </div>
+        </div>
       </div>
     );
   };
+
+  // Lint Results Banner + Stats
+  const renderValidationSummary = () => {
+    if (!result) return null;
+    const { passed, issues, debug_info } = result;
+    const errorCount = debug_info?.error_count || issues?.filter(i => i.severity?.toLowerCase() === 'error' || i.level?.toLowerCase() === 'error').length || 0;
+    const warningCount = debug_info?.warning_count || issues?.filter(i => i.severity?.toLowerCase() === 'warning' || i.level?.toLowerCase() === 'warning').length || 0;
+    const infoCount = debug_info?.info_count || issues?.filter(i => i.severity?.toLowerCase() === 'info' || i.level?.toLowerCase() === 'info').length || 0;
+
+    return (
+      <div className={`rounded-xl border p-6 ${
+        passed 
+          ? 'bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30' 
+          : 'bg-gradient-to-r from-red-500/10 to-pink-500/10 border-red-500/30'
+      }`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            {passed ? (
+              <CheckCircleIcon className="w-8 h-8 text-green-400" />
+            ) : (
+              <XCircleIcon className="w-8 h-8 text-red-400" />
+            )}
+            <div>
+              <h3 className={`font-bold text-xl ${passed ? 'text-green-300' : 'text-red-300'}`}>
+                {passed ? 'Validation Passed' : 'Validation Failed'}
+              </h3>
+              <p className="text-sm text-slate-400">
+                Profile: <span className="font-medium">{lintProfile}</span> • 
+                Analyzed: <span className="font-medium">{debug_info?.playbook_length || 0}</span> characters
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => copyToClipboard(JSON.stringify(result, null, 2))}
+            className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-700/50"
+            title="Copy full validation result"
+          >
+            <ClipboardDocumentIcon className="w-5 h-5" />
+          </button>
+        </div>
+        {/* Enhanced Stats Grid */}
+        {issues && issues.length > 0 && (
+          <>
+            <div className="grid grid-cols-4 gap-4 mt-4">
+              <div className="text-center p-3 rounded-lg bg-slate-800/50">
+                <div className="text-slate-300 text-2xl font-bold">{issues.length}</div>
+                <div className="text-xs text-slate-400">Total Issues</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-red-500/10">
+                <div className="text-red-400 text-2xl font-bold">{errorCount}</div>
+                <div className="text-xs text-slate-400">Errors</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-yellow-500/10">
+                <div className="text-yellow-400 text-2xl font-bold">{warningCount}</div>
+                <div className="text-xs text-slate-400">Warnings</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-blue-500/10">
+                <div className="text-blue-400 text-2xl font-bold">{infoCount}</div>
+                <div className="text-xs text-slate-400">Info</div>
+              </div>
+            </div>
+            {/* Rules Summary */}
+            <div className="mt-4 p-4 bg-slate-800/30 rounded-lg">
+              <h4 className="text-sm font-semibold text-slate-300 mb-2">Most Common Rules</h4>
+              <div className="flex flex-wrap gap-2">
+                {Array.from(new Set(issues.map(i => i.rule).filter(Boolean))).slice(0, 5).map((rule, idx) => {
+                  const count = issues.filter(i => i.rule === rule).length;
+                  return (
+                    <span key={idx} className="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded flex items-center space-x-1">
+                      <span>{rule}</span>
+                      <span className="bg-slate-600/50 text-slate-400 px-1 rounded">{count}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Lint Issues (expandable, grouped by file)
+  const renderIssues = () => {
+    if (!result?.issues || result.issues.length === 0) return null;
+
+    // Group issues by file
+    const groupedIssues = result.issues.reduce((acc, issue, idx) => {
+      const key = issue.filename || 'General';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push({ ...issue, originalIndex: idx });
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h4 className="font-semibold text-white flex items-center space-x-2">
+            <ExclamationTriangleIcon className="w-5 h-5 text-yellow-400" />
+            <span>Issues Found ({result.issues.length})</span>
+          </h4>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => copyToClipboard(result.issues.map(i =>
+                `${i.severity?.toUpperCase()}: ${i.message} ${i.filename ? `(${i.filename}:${i.line})` : ''}`
+              ).join('\n'))}
+              className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              Copy All Issues
+            </button>
+            <button
+              onClick={() => setExpandedIssues(new Set(result.issues.map((_, idx) => idx)))}
+              className="text-xs text-slate-400 hover:text-slate-300 transition-colors"
+            >
+              Expand All
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
+          {Object.entries(groupedIssues).map(([filename, fileIssues]) => (
+            <div key={filename} className="bg-slate-800/30 rounded-lg border border-slate-600/30">
+              <div className="p-3 border-b border-slate-600/30 bg-slate-700/30">
+                <h5 className="font-medium text-slate-200 flex items-center space-x-2">
+                  <DocumentTextIcon className="w-4 h-4 text-slate-400" />
+                  <span>{filename}</span>
+                  <span className="text-xs bg-slate-600/50 text-slate-400 px-2 py-1 rounded">
+                    {fileIssues.length} issue{fileIssues.length !== 1 ? 's' : ''}
+                  </span>
+                </h5>
+              </div>
+              
+              <div className="p-3 space-y-3">
+                {fileIssues.map((issue) => {
+                  const isExpanded = expandedIssues.has(issue.originalIndex);
+                  const severity = issue.severity || issue.level || 'info';
+                  return (
+                    <div
+                      key={issue.originalIndex}
+                      className={`rounded-lg border p-4 bg-gradient-to-r ${getSeverityColor(severity)}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start space-x-3 flex-1">
+                          {getSeverityIcon(severity)}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className={`text-xs font-medium px-2 py-1 rounded ${
+                                severity.toLowerCase() === 'error' ? 'bg-red-500/20 text-red-300' :
+                                severity.toLowerCase() === 'warning' ? 'bg-yellow-500/20 text-yellow-300' :
+                                'bg-blue-500/20 text-blue-300'
+                              }`}>
+                                {severity.toUpperCase()}
+                              </span>
+                              {issue.rule && (
+                                <span className="text-xs text-slate-400 font-mono bg-slate-700/50 px-2 py-1 rounded">
+                                  {issue.rule}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-200 mb-3 leading-relaxed">
+                              {issue.message || issue.description || 'No description available'}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                              {issue.line && (
+                                <span className="flex items-center space-x-1">
+                                  <span>📍</span>
+                                  <span>Line {issue.line}</span>
+                                </span>
+                              )}
+                              {issue.column && (
+                                <span>Column {issue.column}</span>
+                              )}
+                            </div>
+                            {issue.tag && issue.tag.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-3">
+                                {issue.tag.map((tag, tagIndex) => (
+                                  <span
+                                    key={tagIndex}
+                                    className="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => toggleIssueExpansion(issue.originalIndex)}
+                          className="text-slate-400 hover:text-white transition-colors ml-3 p-1"
+                        >
+                          {isExpanded ? (
+                            <ChevronDownIcon className="w-4 h-4" />
+                          ) : (
+                            <ChevronRightIcon className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                      {isExpanded && (
+                        <div className="mt-4 pt-4 border-t border-slate-600/30">
+                          <div className="bg-slate-800/50 rounded p-3">
+                            <h6 className="text-xs font-medium text-slate-400 mb-2">Raw Issue Data</h6>
+                            <pre className="text-xs text-slate-300 overflow-x-auto">
+                              {JSON.stringify(issue, null, 2)}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // --- Main Render ---
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-slate-900 rounded-lg p-6 shadow">
@@ -449,8 +518,6 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
             <p className="text-xs text-slate-400">Ansible Lint Analysis</p>
           </div>
         </div>
-
-        {/* Lint Profile Selector */}
         <div className="flex items-center space-x-3">
           <Cog6ToothIcon className="w-4 h-4 text-slate-400" />
           <select
@@ -466,8 +533,6 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
           <div className={`w-8 h-1 rounded-full bg-gradient-to-r ${getProfileColor(lintProfile)}`}></div>
         </div>
       </div>
-
-      {/* Validation Button */}
       <button
         className={`w-full py-3 rounded-lg font-semibold text-white mb-6 transition-all duration-300 transform ${
           loading
@@ -478,16 +543,7 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
               : "bg-gradient-to-r from-red-500 to-pink-500 hover:scale-105"
             : "bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105"
         }`}
-        onClick={(e) => {
-          console.log("🎯 BUTTON CLICKED EVENT!");
-          console.log("🔍 Event:", e);
-          console.log("🔍 Button disabled:", loading || !playbook || !playbook.trim());
-          console.log("🔍 Loading:", loading);
-          console.log("🔍 Playbook exists:", !!playbook);
-          console.log("🔍 Playbook length:", playbook?.length || 0);
-          e.preventDefault();
-          handleValidation();
-        }}
+        onClick={handleValidation}
         disabled={loading || !playbook || !playbook.trim()}
       >
         <div className="flex items-center justify-center space-x-2">
@@ -509,8 +565,6 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
           )}
         </div>
       </button>
-
-      {/* Error Display */}
       {error && (
         <div className="mb-6 p-4 bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-500/30 rounded-xl">
           <div className="flex items-center space-x-2">
@@ -522,8 +576,6 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
           </div>
         </div>
       )}
-
-      {/* Results Section */}
       {!playbook || !playbook.trim() ? (
         <div className="text-center py-12 bg-slate-800/30 rounded-xl border border-slate-600/30">
           <ShieldCheckIcon className="w-16 h-16 text-slate-500 mx-auto mb-4" />
@@ -537,8 +589,38 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
         <div className="space-y-6">
           {renderValidationSummary()}
           {renderIssues()}
-          
-          {/* Raw Output Toggle */}
+          {/* PATCH: Always show lint/tool error at top */}
+          {result && !result.passed && (() => {
+            // Helper logic for surfacing any error
+            if (!result) return null;
+            let topLevelError = "";
+            if (typeof result.raw_output === "string" && result.raw_output.trim()) {
+              topLevelError = result.raw_output;
+            }
+            if (result.raw_output && typeof result.raw_output === "object") {
+              if (result.raw_output.stderr && result.raw_output.stderr.trim())
+                topLevelError = result.raw_output.stderr;
+              else if (result.raw_output.stdout && result.raw_output.stdout.trim())
+                topLevelError = result.raw_output.stdout;
+            }
+            if (result.error_message) topLevelError = result.error_message;
+            if (typeof result.summary === "string" && result.summary.toLowerCase().startsWith("error"))
+              topLevelError = result.summary;
+            if (!topLevelError) return null;
+            return (
+              <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-red-900/80 to-pink-800/60 border border-red-600 flex items-center space-x-3">
+                <ExclamationTriangleIcon className="w-6 h-6 text-red-300 flex-shrink-0" />
+                <div>
+                  <p className="font-bold text-red-200 mb-1">Validation Error</p>
+                  <p className="text-red-300 text-sm whitespace-pre-line">
+                    {topLevelError.length > 800
+                      ? topLevelError.slice(0, 800) + "..."
+                      : topLevelError}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
           {result.raw_output && (
             <div className="flex items-center justify-between">
               <button
@@ -555,7 +637,6 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
               </button>
             </div>
           )}
-          
           {renderRawOutput()}
         </div>
       )}

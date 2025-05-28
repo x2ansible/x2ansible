@@ -152,7 +152,8 @@ export default function ContextSidebar({
 
   return (
     <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-r border-slate-600/30">
-      <div className="p-6 space-y-6 h-full overflow-y-auto">
+      {/* ADDED: .context-sidebar-scrollbar class */}
+      <div className="p-6 space-y-6 h-full overflow-y-auto context-sidebar-scrollbar">
         {/* Header */}
         <div className="relative">
           <div className="flex items-center space-x-3 mb-2">
@@ -400,43 +401,19 @@ export default function ContextSidebar({
                     <span className={`font-mono truncate ${
                       db.identifier === vectorDbId ? 'text-green-300' : 'text-slate-400'
                     }`}>
-                      {db.identifier || db.provider_resource_id || `KB-${i + 1}`}
+                      {db.identifier}
                     </span>
                   </div>
                 ))}
                 {vectorDbs.length > 3 && (
-                  <div className="text-xs text-slate-500 text-center pt-1">
-                    +{vectorDbs.length - 3} more available
+                  <div className="text-xs text-slate-500 italic">
+                    ...{vectorDbs.length - 3} more
                   </div>
                 )}
               </div>
             </div>
           </div>
         )}
-
-        {/* Conversion Process Indicator */}
-        <div className="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-xl border border-slate-600/30 p-4">
-          <h4 className="font-semibold text-slate-200 text-sm mb-3">Conversion Pipeline</h4>
-          <div className="space-y-2">
-            {[
-              { step: 'Analyze', status: 'completed', color: 'bg-green-400' },
-              { step: 'Context', status: 'active', color: 'bg-blue-400 animate-pulse' },
-              { step: 'Convert', status: 'pending', color: 'bg-slate-600' },
-              { step: 'Validate', status: 'pending', color: 'bg-slate-600' },
-              { step: 'Deploy', status: 'pending', color: 'bg-slate-600' },
-            ].map((item, index) => (
-              <div key={index} className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                <span className={`text-xs ${
-                  item.status === 'active' ? 'text-blue-300 font-medium' :
-                  item.status === 'completed' ? 'text-green-300' : 'text-slate-500'
-                }`}>
-                  {item.step}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -305,3 +305,28 @@ body {
 
 /* ========== END PATCH ========== */
 
+/* Place this in your globals.css, or inside a <style jsx global> block if using Next.js */
+.context-sidebar-scrollbar {
+  scrollbar-color: #1e293b #0f172a; /* thumb, track */
+  scrollbar-width: thin;
+}
+
+.context-sidebar-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  background: transparent;
+}
+
+.context-sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #38bdf8 10%, #a21caf 90%);
+  border-radius: 8px;
+  min-height: 40px;
+}
+
+.context-sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #38bdf8 0%, #c026d3 100%);
+}
+
+.context-sidebar-scrollbar::-webkit-scrollbar-track {
+  background: #111827;
+  border-radius: 8px;
+}

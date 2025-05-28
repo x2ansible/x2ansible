@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { MagnifyingGlassIcon, CheckCircleIcon, ExclamationCircleIcon, ClipboardDocumentIcon } from "@heroicons/react/24/outline";
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { 
+  MagnifyingGlassIcon, 
+  CheckCircleIcon, 
+  ExclamationCircleIcon, 
+  ClipboardDocumentIcon 
+} from "@heroicons/react/24/outline";
 
 interface ContextPanelProps {
   code: string;
@@ -54,6 +62,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
       return copy;
     });
   };
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -130,19 +139,56 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
     }
   };
 
-  // --- ADD SCROLL CONTAINER HERE ---
+  // --- FIXED: Markdown components for syntax highlighting (robust, hydration-error-safe) ---
+  const markdownComponents = {
+    code({ node, inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || "");
+      if (inline) {
+        // Inline code (e.g., `code` in text)
+        return (
+          <code className={className} {...props}>
+            {children}
+          </code>
+        );
+      }
+      // Block code: only return SyntaxHighlighter (renders <pre><code> itself, never inside <p>)
+      return (
+        <SyntaxHighlighter
+          style={oneDark}
+          language={match ? match[1] : ""}
+          PreTag="pre"
+          customStyle={{
+            borderRadius: 8,
+            padding: "1em",
+            fontSize: "0.92em",
+            background: "#23272e"
+          }}
+          {...props}
+        >
+          {String(children).replace(/\n$/, "")}
+        </SyntaxHighlighter>
+      );
+    },
+  };
+
+  // --- Renders context patterns, with markdown prettified, show more/less ---
   const renderResults = () => {
     if (!result) return null;
     const patterns = result.context || [];
     return (
-      <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-2"> {/* <-- scrollable results */}
+      <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-2 context-sidebar-scrollbar">
         {patterns.length === 0 && (
           <div className="text-slate-400 text-center p-4">No Conversion Patterns Found</div>
         )}
         {patterns.map((item, i) => {
           const isExpanded = expandedChunks.has(i);
-          const preview = item.text?.substring(0, 500);
-          const hasMore = item.text?.length > 500;
+          // Show first 12 lines or 800 chars as preview (whichever is less)
+          const lines = item.text?.split("\n") || [];
+          const preview =
+            lines.slice(0, 12).join("\n").slice(0, 800) +
+            ((lines.length > 12 || (item.text?.length ?? 0) > 800) ? "\n\n..." : "");
+          const hasMore = lines.length > 12 || (item.text?.length ?? 0) > 800;
+
           return (
             <div key={i} className="bg-slate-800 rounded border border-slate-600 p-3 mb-2">
               <div className="flex justify-between items-center">
@@ -152,7 +198,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
                 <div>
                   {hasMore && (
                     <button
-                      className="text-xs mr-2"
+                      className="text-xs mr-2 underline text-blue-400"
                       onClick={() => toggleChunkExpansion(i)}
                     >
                       {isExpanded ? "Show Less" : "Show More"}
@@ -161,14 +207,18 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
                   <button
                     onClick={() => copyToClipboard(item.text)}
                     className="text-xs text-blue-400"
+                    title="Copy to clipboard"
                   >
                     <ClipboardDocumentIcon className="w-4 h-4 inline" />
                   </button>
                 </div>
               </div>
-              <pre className="mt-2 text-slate-200 text-xs overflow-x-auto">
-                {isExpanded || !hasMore ? item.text : preview + "..."}
-              </pre>
+              {/* Pretty markdown! */}
+              <div className="mt-2 text-slate-200 text-xs overflow-x-auto prose prose-invert prose-sm max-w-none">
+                <ReactMarkdown components={markdownComponents}>
+                  {isExpanded || !hasMore ? item.text : preview}
+                </ReactMarkdown>
+              </div>
             </div>
           );
         })}
@@ -223,8 +273,8 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
         </div>
       )}
 
-      {/* --- Here is the scrollable results panel --- */}
-      <div className="mt-6 max-h-[32rem] overflow-y-auto pr-2">
+      {/* --- Scrollable, pretty, Markdown-aware results panel --- */}
+      <div className="mt-6 max-h-[32rem] overflow-y-auto pr-2 context-sidebar-scrollbar">
         {renderResults()}
       </div>
     </div>
