@@ -1,7 +1,6 @@
 from fileio.settings import Settings
 from fileio.file_handler import FileHandler
 from ai_modules.ollama_explanator import Ollama
-from ai_modules.wxai import WxAI
 import os
 import re
 
