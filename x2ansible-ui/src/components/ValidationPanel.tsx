@@ -235,9 +235,9 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
                         <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                         <h5 className="text-sm font-medium text-green-300">Standard Output</h5>
                       </div>
-                      <pre className="text-xs text-slate-300 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded border border-slate-600/30">
+                      <div className="text-xs text-slate-300 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded border border-slate-600/30 whitespace-pre-wrap font-mono">
                         {rawOutput.stdout || "[empty]"}
-                      </pre>
+                      </div>
                     </div>
                   )}
                   {rawOutput.stderr && (
@@ -246,9 +246,9 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
                         <div className="w-2 h-2 bg-red-400 rounded-full"></div>
                         <h5 className="text-sm font-medium text-red-300">Standard Error</h5>
                       </div>
-                      <pre className="text-xs text-slate-300 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded border border-slate-600/30">
+                      <div className="text-xs text-slate-300 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded border border-slate-600/30 whitespace-pre-wrap font-mono">
                         {rawOutput.stderr || "[empty]"}
-                      </pre>
+                      </div>
                     </div>
                   )}
                   {!rawOutput.stdout && !rawOutput.stderr && (
@@ -264,9 +264,9 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
                     <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                     <h5 className="text-sm font-medium text-blue-300">Raw String</h5>
                   </div>
-                  <pre className="text-xs text-slate-300 overflow-auto max-h-64 bg-slate-900/50 p-3 rounded border border-slate-600/30">
+                  <div className="text-xs text-slate-300 overflow-auto max-h-64 bg-slate-900/50 p-3 rounded border border-slate-600/30 whitespace-pre-wrap font-mono">
                     {rawOutput}
-                  </pre>
+                  </div>
                 </div>
               )}
             </>
@@ -277,9 +277,9 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
               <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
               <h5 className="text-sm font-medium text-purple-300">JSON Representation</h5>
             </div>
-            <pre className="text-xs text-slate-300 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded border border-slate-600/30">
+            <div className="text-xs text-slate-300 overflow-auto max-h-48 bg-slate-900/50 p-3 rounded border border-slate-600/30 whitespace-pre-wrap font-mono">
               {JSON.stringify(rawOutput, null, 2)}
-            </pre>
+            </div>
           </div>
         </div>
       </div>
@@ -311,10 +311,10 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
               <h3 className={`font-bold text-xl ${passed ? 'text-green-300' : 'text-red-300'}`}>
                 {passed ? 'Validation Passed' : 'Validation Failed'}
               </h3>
-              <p className="text-sm text-slate-400">
+              <div className="text-sm text-slate-400">
                 Profile: <span className="font-medium">{lintProfile}</span> • 
                 Analyzed: <span className="font-medium">{debug_info?.playbook_length || 0}</span> characters
-              </p>
+              </div>
             </div>
           </div>
           <button
@@ -444,9 +444,9 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-slate-200 mb-3 leading-relaxed">
+                            <div className="text-sm text-slate-200 mb-3 leading-relaxed">
                               {issue.message || issue.description || 'No description available'}
-                            </p>
+                            </div>
                             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
                               {issue.line && (
                                 <span className="flex items-center space-x-1">
@@ -487,9 +487,9 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
                         <div className="mt-4 pt-4 border-t border-slate-600/30">
                           <div className="bg-slate-800/50 rounded p-3">
                             <h6 className="text-xs font-medium text-slate-400 mb-2">Raw Issue Data</h6>
-                            <pre className="text-xs text-slate-300 overflow-x-auto">
+                            <div className="text-xs text-slate-300 overflow-x-auto whitespace-pre-wrap font-mono">
                               {JSON.stringify(issue, null, 2)}
-                            </pre>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -515,7 +515,7 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
           </div>
           <div>
             <h2 className="text-white font-bold text-xl">Playbook Validation</h2>
-            <p className="text-xs text-slate-400">Ansible Lint Analysis</p>
+            <div className="text-xs text-slate-400">Ansible Lint Analysis</div>
           </div>
         </div>
         <div className="flex items-center space-x-3">
@@ -580,7 +580,7 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
         <div className="text-center py-12 bg-slate-800/30 rounded-xl border border-slate-600/30">
           <ShieldCheckIcon className="w-16 h-16 text-slate-500 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-slate-300 mb-2">No Playbook Available</h3>
-          <p className="text-slate-400 mb-4">Generate a playbook first to validate it</p>
+          <div className="text-slate-400 mb-4">Generate a playbook first to validate it</div>
           <div className="text-sm text-slate-500">
             Go to the <strong>Convert</strong> step to generate an Ansible playbook
           </div>
@@ -611,12 +611,12 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
               <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-red-900/80 to-pink-800/60 border border-red-600 flex items-center space-x-3">
                 <ExclamationTriangleIcon className="w-6 h-6 text-red-300 flex-shrink-0" />
                 <div>
-                  <p className="font-bold text-red-200 mb-1">Validation Error</p>
-                  <p className="text-red-300 text-sm whitespace-pre-line">
+                  <div className="font-bold text-red-200 mb-1">Validation Error</div>
+                  <div className="text-red-300 text-sm whitespace-pre-line">
                     {topLevelError.length > 800
                       ? topLevelError.slice(0, 800) + "..."
                       : topLevelError}
-                  </p>
+                  </div>
                 </div>
               </div>
             );
