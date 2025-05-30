@@ -47,7 +47,7 @@ const ClassificationPanel: React.FC<{
       <div className="w-full h-full flex items-center justify-center bg-gray-900">
         <div className="text-center text-gray-400">
           <FileCode size={48} className="mx-auto mb-4 text-gray-600" />
-          <p className="text-lg text-gray-300">No classification result available.</p>
+          <p className="text-lg text-gray-300">Analysis has not been performed yet.</p>
           <p className="text-sm mt-2 text-gray-500">Upload and analyze a file to see the results here.</p>
         </div>
       </div>

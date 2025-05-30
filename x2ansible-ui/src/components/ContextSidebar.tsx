@@ -81,22 +81,22 @@ export default function ContextSidebar({
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch(`/api/context/ingest`, {
+      const response = await fetch("/api/context/ingest", {
         method: "POST",
         body: formData,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || `HTTP ${response.status}`);
+      if (response.ok) {
+        setSuccess("Conversion pattern added successfully!");
+        setFile(null);
+        if (onDocUploaded) {
+          onDocUploaded();
+        }
+        setTimeout(() => setSuccess(null), 4000);
+      } else {
+        const errorText = `Upload failed with status ${response.status}`;
+        throw new Error(errorText);
       }
-
-      setSuccess("Conversion pattern added successfully!");
-      setFile(null);
-      onDocUploaded && onDocUploaded();
-      
-      setTimeout(() => setSuccess(null), 4000);
     } catch (err) {
       console.error("Upload failed:", err);
       setError(err instanceof Error ? err.message : "Failed to add conversion pattern");
@@ -152,7 +152,6 @@ export default function ContextSidebar({
 
   return (
     <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-r border-slate-600/30">
-      {/* ADDED: .context-sidebar-scrollbar class */}
       <div className="p-6 space-y-6 h-full overflow-y-auto context-sidebar-scrollbar">
         {/* Header */}
         <div className="relative">

@@ -118,21 +118,4 @@ agents:
       \ code blocks or code fences (e.g., no triple backticks).\nYour response must\
       \ start with '---' and contain no extra blank lines at the start or end."
     updated_at: '2025-05-30T03:03:55.899456'
-  validation:
-    name: Validation Agent
-    description: AI agent for validation
-    status: active
-    version: '1.0'
-    created_at: '2025-05-30T03:05:26.765270'
-    instructions: 'You are an expert Ansible playbook validation agent. Your role
-      is to:
-
-      1. Always use the ansible_lint_tool when asked to validate a playbook (never
-      answer directly, never guess).
-
-      2. Analyze and explain the lint results for users (status, errors, fixes, why
-      it matters).
-
-      3. Be thorough, clear, and educational in your response.'
-    updated_at: '2025-05-30T03:06:09.185954'
-updated_at: '2025-05-30T03:06:09.186620'
+updated_at: '2025-05-30T03:03:55.901141'

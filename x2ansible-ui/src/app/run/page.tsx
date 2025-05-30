@@ -17,6 +17,8 @@ import GeneratePanel from "@/components/GeneratePanel";
 import GenerateSidebar from "@/components/GenerateSidebar";
 import ValidationPanel from "@/components/ValidationPanel";
 import ValidationSidebar from "@/components/ValidationSidebar";
+import DeploymentPanel from "@/components/DeploymentPanel";
+import DeploymentSidebar from "@/components/DeploymentSidebar";
 
 import { useFileOperations } from "@/hooks/useFileOperations";
 import { useGitOperations } from "@/hooks/useGitOperations";
@@ -92,6 +94,7 @@ export default function RunWorkflowPage() {
 
   const [deploymentConfig, setDeploymentConfig] = useState({
     environment: 'development' as 'development' | 'staging' | 'production',
+    deploymentMode: 'direct' as 'aap' | 'direct',
     targetHosts: [] as string[],
     rollbackStrategy: 'gradual' as 'immediate' | 'gradual' | 'none',
     notifications: true
@@ -335,6 +338,18 @@ export default function RunWorkflowPage() {
               validationResult={validationResult}
               loading={loading}
             />
+          ) : step === 4 ? (
+            <DeploymentSidebar
+              deploymentConfig={{
+                environment: deploymentConfig.environment,
+                deploymentMode: deploymentConfig.deploymentMode,
+                targetHosts: deploymentConfig.targetHosts,
+                rollbackStrategy: deploymentConfig.rollbackStrategy,
+                notifications: deploymentConfig.notifications
+              }}
+              setDeploymentConfig={setDeploymentConfig}
+              playbookReady={generatedPlaybook.length > 0}
+            />
           ) : (
             <WorkflowSidebar
               currentStep={step}
@@ -408,6 +423,33 @@ export default function RunWorkflowPage() {
               validationConfig={validationConfig}
               onLogMessage={addLogMessage}
               onValidationComplete={handleValidationComplete}
+            />
+          ) : step === 4 ? (
+            <DeploymentPanel
+              playbook={generatedPlaybook}
+              deploymentConfig={{
+                environment: deploymentConfig.environment,
+                deploymentMode: deploymentConfig.deploymentMode,
+                directConfig: {
+                  targetHosts: deploymentConfig.targetHosts,
+                  sshCredentials: 'default',
+                  becomeMethod: 'sudo'
+                },
+                aapConfig: {
+                  controllerUrl: 'https://aap.example.com',
+                  projectName: 'Generated Project',
+                  jobTemplateName: 'Generated Job Template',
+                  inventory: 'default-inventory',
+                  credentials: 'default-credentials'
+                },
+                rollbackStrategy: deploymentConfig.rollbackStrategy,
+                notifications: deploymentConfig.notifications
+              }}
+              onLogMessage={addLogMessage}
+              onComplete={(result: any) => {
+                markStepAsCompleted(4);
+                addLogMessage("🎉 Deployment completed successfully!");
+              }}
             />
           ) : (
             <ClassificationPanel

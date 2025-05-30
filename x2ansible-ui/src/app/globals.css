@@ -330,3 +330,12 @@ body {
   background: #111827;
   border-radius: 8px;
 }
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.8s cubic-bezier(.39,.575,.565,1) both;
+  }
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(-8px);}
+    100% { opacity: 1; transform: translateY(0);}
+  }
+}

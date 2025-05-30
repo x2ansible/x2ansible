@@ -1,27 +1,55 @@
-FROM registry.access.redhat.com/ubi9/python-311
+# ---- Build the React UI ----
+FROM registry.access.redhat.com/ubi9/nodejs-20 AS ui-build
 
-# Set working directory
-WORKDIR /app
+WORKDIR /build
+COPY x2ansible-ui ./x2ansible-ui
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+WORKDIR /build/x2ansible-ui
 
-# Copy all source code and entrypoint
-COPY . .
-COPY entrypoint.sh /app/entrypoint.sh
+# Run as root for npm install/build permissions
+USER 0
 
-# Set required environment variables for Streamlit
-ENV STREAMLIT_SERVER_PORT=8080
-ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
-ENV STREAMLIT_SERVER_HEADLESS=true
-ENV STREAMLIT_SERVER_ENABLECORS=false
+RUN npm install --legacy-peer-deps && npm run build
 
-# Expose Streamlit port
-EXPOSE 8080
+# ---- Runtime: Python (FastAPI) + Static UI ----
+FROM registry.access.redhat.com/ubi9/python-311:latest
 
-# Run as non-root OpenShift-compatible user
+WORKDIR /opt/app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+# Copy backend code
+COPY main.py app.py config.yaml ./
+COPY agents ./agents
+COPY routes ./routes
+COPY tools ./tools
+COPY utils ./utils
+COPY models ./models
+COPY ai_modules ./ai_modules
+COPY infra ./infra
+COPY uploads ./uploads
+COPY config ./config
+COPY lssapi.json ./
+COPY __main__.py ./
+
+# Copy static UI build
+COPY --from=ui-build /build/x2ansible-ui/out ./ui
+
+# Install static file server for UI
+RUN pip install --no-cache-dir uvicorn fastapi python-multipart httpx pyyaml jinja2 && \
+    pip install --no-cache-dir serve
+
+# Ensure config.yaml and folders are writable for any UID (SCC safe)
+RUN chmod 0777 /opt/app/config.yaml || true && \
+    chmod -R 0777 /opt/app/uploads /opt/app/logs || true
+
 USER 1001
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+EXPOSE 8000
+EXPOSE 3000
+
+COPY start_ui_api.sh /opt/app/start_ui_api.sh
+RUN chmod +x /opt/app/start_ui_api.sh
+
+ENTRYPOINT ["/opt/app/start_ui_api.sh"]

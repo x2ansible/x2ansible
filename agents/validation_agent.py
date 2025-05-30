@@ -1,5 +1,3 @@
-# agents/validation_agent.py
-
 """
 ValidationAgent: LlamaStack agent for Ansible playbook validation using a custom tool.
 
@@ -15,6 +13,9 @@ from llama_stack_client import LlamaStackClient
 from llama_stack_client.lib.agents.agent import Agent
 from llama_stack_client.lib.agents.event_logger import EventLogger
 
+# Config-driven instructions
+from config.agent_config import get_agent_instructions, get_config
+
 # Import our LlamaStack-compliant tool
 from tools.ansible_lint_tool import ansible_lint_tool
 
@@ -25,11 +26,30 @@ class ValidationAgent:
     LlamaStack ValidationAgent that uses the custom ansible_lint_tool
     to validate Ansible playbooks.
     """
-    def __init__(self, client: LlamaStackClient, model: str):
+    def __init__(self, client: LlamaStackClient, model: str, timeout: int = 30):
         self.client = client
         self.model = model
+        self.timeout = timeout
+        self.config = get_config()
+        self.agent_id = "validation"
         self.agent = None
         self._initialize_agent()
+        self._last_instructions_hash = hash(self._get_current_instructions())
+
+    def _get_current_instructions(self) -> str:
+        instructions = get_agent_instructions(self.agent_id)
+        if not instructions:
+            logger.warning("No instructions found in config, using fallback.")
+            return self._get_fallback_instructions()
+        return instructions
+
+    def _get_fallback_instructions(self) -> str:
+        return (
+            "You are an expert Ansible playbook validation agent. Your role is to:\n"
+            "1. Always use the ansible_lint_tool when asked to validate a playbook (never answer directly, never guess).\n"
+            "2. Analyze and explain the lint results for users (status, errors, fixes, why it matters).\n"
+            "3. Be thorough, clear, and educational in your response."
+        )
 
     def _initialize_agent(self):
         """Initialize the LlamaStack agent with the ansible_lint_tool."""
@@ -37,7 +57,7 @@ class ValidationAgent:
             self.agent = Agent(
                 client=self.client,
                 model=self.model,
-                instructions=self._get_agent_instructions(),
+                instructions=self._get_current_instructions(),
                 tools=[ansible_lint_tool]  # Register our tool with the agent
             )
             logger.info(f"✅ ValidationAgent initialized with model: {self.model}")
@@ -45,14 +65,17 @@ class ValidationAgent:
             logger.error(f"❌ Failed to initialize ValidationAgent: {e}")
             raise
 
-    def _get_agent_instructions(self) -> str:
-        """System instructions for the validation agent."""
-        return (
-            "You are an expert Ansible playbook validation agent. Your role is to:\n"
-            "1. Always use the ansible_lint_tool when asked to validate a playbook (never answer directly, never guess).\n"
-            "2. Analyze and explain the lint results for users (status, errors, fixes, why it matters).\n"
-            "3. Be thorough, clear, and educational in your response."
-        )
+    def _check_and_reload_config(self):
+        """Hot-reload config if the instructions changed."""
+        try:
+            current_instructions = self._get_current_instructions()
+            current_hash = hash(current_instructions)
+            if current_hash != self._last_instructions_hash:
+                logger.info("ValidationAgent instructions changed, reloading agent.")
+                self._initialize_agent()
+                self._last_instructions_hash = current_hash
+        except Exception as e:
+            logger.error(f"Failed to check/reload config: {e}")
 
     async def validate_playbook(self, playbook: str, lint_profile: str = "basic") -> Dict[str, Any]:
         """
@@ -66,6 +89,7 @@ class ValidationAgent:
             Dict[str, Any]: Validation result and agent reasoning.
         """
         try:
+            self._check_and_reload_config()
             logger.info(f"🚀 Starting agentic validation with {lint_profile} profile")
             session_id = self.agent.create_session("validation-session")
             prompt = (
@@ -101,10 +125,8 @@ class ValidationAgent:
             for log in event_logger.log(response):
                 event_str = str(log)
                 all_events.append(event_str)
-                # Print the log to see what we're getting
                 log.print()
 
-                # Look for tool execution response
                 if "tool_execution> Tool:ansible_lint_tool Response:" in event_str:
                     try:
                         json_start = event_str.find('Response:') + len('Response:')
@@ -116,12 +138,10 @@ class ValidationAgent:
                         logger.info(f"✅ Successfully parsed tool result: {tool_result}")
                     except Exception as e:
                         logger.error(f"❌ Failed to parse tool result: {e}")
-                # Agent text/inference response
                 elif event_str.startswith("inference> ") and not event_str.startswith("inference> ["):
                     agent_text += event_str[len("inference> "):] + "\n"
                 if hasattr(log, 'message') and log.message:
                     agent_text += log.message + "\n"
-                # Check for structured tool results in event object
                 if hasattr(log, 'event') and log.event:
                     if hasattr(log.event, 'payload'):
                         payload = log.event.payload
