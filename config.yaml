@@ -1,23 +1,57 @@
-llama_stack:
-  base_url: "http://localhost:8321"
-  model: "llama3.2:3b"
+active_profile: local
 
-vector_db:
-  id: "iac"
-  embedding_model: "all-MiniLM-L6-v2"
-  embedding_dim: 384
-  chunk_size: 512
+defaults:
+  llama_stack:
+    base_url: "http://llamastack:8321"
+    model: "llama3.2:3b"
+  cors:
+    allow_origins:
+      - "http://localhost:3000"
+  paths:
+    uploads: "uploads"
+    docs: "docs"
+  vector_db:
+    id: "iac"
+    embedding_model: "all-MiniLM-L6-v2"
+    embedding_dim: 384
+    chunk_size: 512
+  agent_endpoints:
+    classifier: "http://x2ansible-api:8000/api/classify"
+    context: "http://x2ansible-api:8000/api/context"
+    converter: "http://x2ansible-api:8000/api/convert"
+    validator: "http://x2ansible-api:8000/api/validate"
+  logging:
+    log_dir: "logs"
+    file: "agentic_model.log"
+    app_log: "app.log"
+    level: INFO
+  app:
+    version: "1.0.0"
 
-docs_folder: "docs"
+profiles:
+  local:
+    llama_stack:
+      base_url: "http://localhost:8321"
+    cors:
+      allow_origins:
+        - "http://localhost:3000"
+    logging:
+      level: DEBUG
 
-agent_endpoints:
-  classifier: "http://localhost:8000/api/classify"
-  context: "http://localhost:8000/api/context"
-  converter: "http://localhost:8000/api/convert"
-  validator: "http://localhost:8000/api/validate"
+  openshift:
+    llama_stack:
+      base_url: "http://llamastack:8321"
+    cors:
+      allow_origins:
+        - "https://x2ansible-ui.openshift.apps.example.com"
+    logging:
+      level: INFO
 
-logging:
-  log_dir: "logs"
-  file: "agentic_model.log"
-  app_log: "app.log"
-  level: INFO
+  staging:
+    llama_stack:
+      base_url: "http://llamastack-staging:8321"
+    cors:
+      allow_origins:
+        - "https://x2ansible-staging.apps.example.com"
+    logging:
+      level: INFO

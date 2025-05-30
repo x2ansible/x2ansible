@@ -1,0 +1,11 @@
+{
+  "id": "admin",
+  "comment": "Admin User",
+  "uid": 1001,
+  "gid": "admin",
+  "groups": ["wheel"],
+  "home": "/home/admin",
+  "shell": "/bin/bash",
+  "password": "$6$HASHEDPASSWORD",
+  "ssh_keys": ["ssh-rsa AAAA...admin"]
+}

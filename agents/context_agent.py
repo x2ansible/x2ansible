@@ -64,7 +64,7 @@ class ContextAgent:
             context_chunks.append(top_content)
         # Output as a list of dicts for UI compatibility
         context_list = [{"text": chunk} for chunk in context_chunks if chunk]
-        logger.info(f"✅ ContextAgent returned {len(context_list)} chunks")
+        logger.info(f" ContextAgent returned {len(context_list)} chunks")
         return {
             "context": context_list,
             "steps": steps

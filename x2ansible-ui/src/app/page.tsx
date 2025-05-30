@@ -113,7 +113,7 @@ export default function Page() {
       <div className="w-full max-w-7xl mx-auto flex flex-col items-center gap-10 px-2 pt-10 pb-12">
         {/* Headline */}
         <h1 className="text-4xl md:text-5xl font-black text-center bg-gradient-to-r from-blue-400 via-fuchsia-400 to-cyan-400 bg-[length:200%_auto] bg-clip-text text-transparent animate-gradient-wave mb-2 tracking-tight drop-shadow-md">
-          Agentic Workflows for IaC
+          Agentic Workflows
         </h1>
         {/* Marquee Subtitle */}
         <div

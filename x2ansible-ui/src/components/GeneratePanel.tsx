@@ -13,7 +13,6 @@ import {
   ChevronUpIcon,
   EyeIcon,
   EyeSlashIcon,
-  PencilSquareIcon,
   ArrowPathIcon
 } from "@heroicons/react/24/outline";
 
@@ -32,7 +31,7 @@ interface StreamingState {
   currentIndex: number;
 }
 
-type PanelMode = 'ready' | 'generating' | 'complete' | 'editing';
+type PanelMode = 'ready' | 'generating' | 'complete';
 
 export default function GeneratePanel({ 
   code, 
@@ -46,7 +45,6 @@ export default function GeneratePanel({
   const [error, setError] = useState<string | null>(null);
   const [panelMode, setPanelMode] = useState<PanelMode>('ready');
   const [showAnalysisDetails, setShowAnalysisDetails] = useState(false);
-  const [specText, setSpecText] = useState<string>("");
   const [hasGenerated, setHasGenerated] = useState(false);
 
   // Streaming state
@@ -66,11 +64,6 @@ export default function GeneratePanel({
   const logMessage = useCallback((msg: string) => {
     onLogMessage?.(msg);
   }, [onLogMessage]);
-
-  useEffect(() => {
-    if (!context || !classificationResult || specText) return;
-    setSpecText("Generated requirements based on your infrastructure code and context analysis. You can edit these requirements before generating the playbook.");
-  }, [context, classificationResult]);
 
   const startStreaming = useCallback((fullText: string) => {
     setPanelMode('generating');
@@ -133,7 +126,7 @@ export default function GeneratePanel({
     try {
       const payload = {
         input_code: code,
-        context: specText || context
+        context: context
       };
       const response = await fetch(`${BACKEND_URL}/api/generate`, {
         method: "POST",
@@ -160,7 +153,7 @@ export default function GeneratePanel({
     } finally {
       setLoading(false);
     }
-  }, [code, specText, context, startStreaming, onComplete, logMessage, BACKEND_URL]);
+  }, [code, context, startStreaming, onComplete, logMessage, BACKEND_URL]);
 
   const copyToClipboard = useCallback(async (text: string) => {
     try {
@@ -203,20 +196,11 @@ export default function GeneratePanel({
             <div>
               <h1 className="font-bold text-white text-2xl lg:text-3xl">Generate Ansible Playbook</h1>
               <p className="text-slate-400 text-base">
-                {hasGenerated ? 'Playbook ready - edit requirements to regenerate' : 'AI-powered infrastructure conversion'}
+                AI-powered infrastructure conversion
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            {hasGenerated && (
-              <button
-                onClick={() => setPanelMode(panelMode === 'editing' ? 'complete' : 'editing')}
-                className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-all duration-200 flex items-center space-x-2"
-              >
-                <PencilSquareIcon className="w-4 h-4" />
-                <span className="text-sm">{panelMode === 'editing' ? 'Cancel Edit' : 'Edit Requirements'}</span>
-              </button>
-            )}
             <button
               onClick={handleGenerate}
               disabled={loading || streamingState.isStreaming}
@@ -307,29 +291,6 @@ export default function GeneratePanel({
                 )}
               </div>
             </button>
-          </div>
-        )}
-
-        {(panelMode === 'editing' || !hasGenerated) && (
-          <div className="mb-6">
-            <div className="bg-slate-800/50 rounded-xl border border-slate-600/30 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-slate-200 flex items-center space-x-2">
-                  <DocumentTextIcon className="w-5 h-5 text-slate-400" />
-                  <span>Requirements & Specifications</span>
-                </h3>
-                <span className="text-xs text-slate-500">
-                  {specText ? `${specText.length} characters` : 'Auto-generated'}
-                </span>
-              </div>
-              <textarea
-                value={specText}
-                onChange={e => setSpecText(e.target.value)}
-                className="w-full bg-slate-900/50 text-slate-100 font-mono p-4 rounded-lg border border-slate-600/30 outline-none min-h-[120px] max-h-[300px] resize-vertical scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/25 transition-colors"
-                style={{ fontFamily: 'Monaco, Menlo, "Ubuntu Mono", Consolas, monospace', fontSize: '0.9rem', lineHeight: 1.5 }}
-                placeholder="Describe your infrastructure requirements here..."
-              />
-            </div>
           </div>
         )}
 

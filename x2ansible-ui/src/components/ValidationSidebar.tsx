@@ -27,16 +27,19 @@ interface ValidationSidebarProps {
   setValidationConfig: (config: any) => void;
   validationResult?: any;
   loading?: boolean;
+  selectedProfile?: string;
+  onProfileChange?: (profile: string) => void;
 }
 
 export default function ValidationSidebar({ 
   validationConfig, 
   setValidationConfig, 
   validationResult,
-  loading = false
+  loading = false,
+  selectedProfile = 'production',
+  onProfileChange
 }: ValidationSidebarProps) {
   const [lintProfiles, setLintProfiles] = useState<any[]>([]);
-  const [selectedProfile, setSelectedProfile] = useState('production');
   const [validationStats, setValidationStats] = useState({
     totalRuns: 0,
     successRate: 0,
@@ -47,20 +50,35 @@ export default function ValidationSidebar({
 
   // Load validation profiles and stats
   useEffect(() => {
+    // Updated to use official Ansible Lint profiles
     const mockProfiles = [
+      { 
+        id: 'minimal', 
+        name: 'Minimal', 
+        description: 'Only critical errors and warnings',
+        rules: 12,
+        color: 'from-blue-500 to-cyan-400'
+      },
       { 
         id: 'basic', 
         name: 'Basic', 
         description: 'Essential syntax and structure checks',
-        rules: 15,
+        rules: 28,
         color: 'from-green-500 to-emerald-400'
       },
       { 
-        id: 'moderate', 
-        name: 'Moderate', 
-        description: 'Includes security and best practices',
-        rules: 32,
-        color: 'from-yellow-500 to-orange-400'
+        id: 'safety', 
+        name: 'Safety', 
+        description: 'Security and safety focused rules',
+        rules: 35,
+        color: 'from-orange-500 to-red-400'
+      },
+      { 
+        id: 'test', 
+        name: 'Test', 
+        description: 'Rules suitable for testing environments',
+        rules: 42,
+        color: 'from-purple-500 to-pink-400'
       },
       { 
         id: 'production', 
@@ -86,6 +104,12 @@ export default function ValidationSidebar({
       ...validationConfig,
       [key]: value
     });
+  };
+
+  const handleProfileChange = (profile: string) => {
+    if (onProfileChange) {
+      onProfileChange(profile);
+    }
   };
 
   const toggleSection = (section: string) => {
@@ -226,7 +250,7 @@ export default function ValidationSidebar({
                         name="profile"
                         value={profile.id}
                         checked={selectedProfile === profile.id}
-                        onChange={(e) => setSelectedProfile(e.target.value)}
+                        onChange={(e) => handleProfileChange(e.target.value)}
                         className="w-4 h-4 text-blue-500 bg-slate-700 border-slate-600"
                       />
                       <div className="flex-1">

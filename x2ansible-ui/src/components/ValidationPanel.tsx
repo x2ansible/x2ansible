@@ -12,6 +12,20 @@ import {
   Cog6ToothIcon
 } from "@heroicons/react/24/outline";
 
+// --- Utility: Clean playbook before validation ---
+function cleanPlaybook(yamlText: string): string {
+  if (!yamlText) return '';
+  // Remove leading/trailing whitespace and ALL leading YAML doc markers
+  const lines = yamlText.trim().split('\n').filter(Boolean);
+  let idx = 0;
+  // Remove all leading '---' or "''---"
+  while (idx < lines.length && (lines[idx].trim() === '---' || lines[idx].trim() === "''---")) {
+    idx++;
+  }
+  // Re-join remaining lines, add one doc marker at the top
+  return `---\n${lines.slice(idx).join('\n')}`;
+}
+
 // --- Interfaces ---
 
 interface ValidationPanelProps {
@@ -19,6 +33,7 @@ interface ValidationPanelProps {
   validationConfig?: any;
   onLogMessage?: (msg: string) => void;
   onValidationComplete?: (result: ValidationResult) => void;
+  selectedProfile?: string;
 }
 
 interface ValidationIssue {
@@ -57,12 +72,12 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
   validationConfig,
   onLogMessage,
   onValidationComplete,
+  selectedProfile = 'production'
 }) => {
   const [result, setResult] = useState<ValidationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasValidated, setHasValidated] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lintProfile, setLintProfile] = useState<'basic' | 'moderate' | 'production'>('production');
   const [expandedIssues, setExpandedIssues] = useState<Set<number>>(new Set());
   const [showRawOutput, setShowRawOutput] = useState(false);
   const hasLoggedInit = useRef(false);
@@ -130,10 +145,23 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
 
   const getProfileColor = (profile: string) => {
     switch (profile) {
+      case 'minimal': return 'from-blue-500 to-cyan-400';
       case 'basic': return 'from-green-500 to-emerald-400';
-      case 'moderate': return 'from-yellow-500 to-orange-400';
+      case 'safety': return 'from-orange-500 to-red-400';
+      case 'test': return 'from-purple-500 to-pink-400';
       case 'production': return 'from-red-500 to-pink-400';
       default: return 'from-blue-500 to-cyan-400';
+    }
+  };
+
+  const getProfileDisplayName = (profile: string) => {
+    switch (profile) {
+      case 'minimal': return 'Minimal';
+      case 'basic': return 'Basic';
+      case 'safety': return 'Safety';
+      case 'test': return 'Test';
+      case 'production': return 'Production';
+      default: return 'Production';
     }
   };
 
@@ -153,11 +181,11 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
 
     const startTime = Date.now();
     try {
-      logMessage(`🚀 Starting validation with ${lintProfile} profile...`);
+      logMessage(`🚀 Starting validation with ${selectedProfile} profile...`);
       const response = await fetch("/api/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playbook, lint_profile: lintProfile }),
+        body: JSON.stringify({ playbook: cleanPlaybook(playbook), lint_profile: selectedProfile }),
       });
 
       let data: ValidationResult;
@@ -312,7 +340,7 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
                 {passed ? 'Validation Passed' : 'Validation Failed'}
               </h3>
               <div className="text-sm text-slate-400">
-                Profile: <span className="font-medium">{lintProfile}</span> • 
+                Profile: <span className="font-medium">{getProfileDisplayName(selectedProfile)}</span> • 
                 Analyzed: <span className="font-medium">{debug_info?.playbook_length || 0}</span> characters
               </div>
             </div>
@@ -519,18 +547,12 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <Cog6ToothIcon className="w-4 h-4 text-slate-400" />
-          <select
-            value={lintProfile}
-            onChange={(e) => setLintProfile(e.target.value as any)}
-            disabled={loading}
-            className="text-xs rounded-lg border border-slate-600/50 bg-slate-700/50 text-slate-200 px-3 py-2 focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/25 transition-colors"
-          >
-            <option value="basic">Basic Profile</option>
-            <option value="moderate">Moderate Profile</option>
-            <option value="production">Production Profile</option>
-          </select>
-          <div className={`w-8 h-1 rounded-full bg-gradient-to-r ${getProfileColor(lintProfile)}`}></div>
+          <div className="flex items-center space-x-2 px-3 py-2 bg-slate-700/50 rounded-lg border border-slate-600/50">
+            <Cog6ToothIcon className="w-4 h-4 text-slate-400" />
+            <span className="text-sm text-slate-300">Profile:</span>
+            <span className="text-sm font-medium text-white">{getProfileDisplayName(selectedProfile)}</span>
+          </div>
+          <div className={`w-8 h-1 rounded-full bg-gradient-to-r ${getProfileColor(selectedProfile)}`}></div>
         </div>
       </div>
       <button

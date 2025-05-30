@@ -1,35 +1,29 @@
-# routes/spec.py
-
-import yaml
 import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
-# Load configuration
-try:
-    with open("config.yaml", "r") as f:
-        config = yaml.safe_load(f)
-except FileNotFoundError:
-    raise RuntimeError("config.yaml not found - ensure configuration is properly set up")
+from agents.spec_agent import SpecAgent
 
-BASE_URL = config["llama_stack"]["base_url"]
-MODEL_ID = config["llama_stack"]["model"]
-VECTOR_DB_ID = config["vector_db"]["id"]
-
-logger = logging.getLogger(__name__)
-
-# Initialize SpecAgent
-spec_agent = None
-try:
-    from agents.spec_agent import SpecAgent
-    spec_agent = SpecAgent(BASE_URL, MODEL_ID, VECTOR_DB_ID)
-    logger.info("✅ SpecAgent initialized successfully")
-except Exception as e:
-    logger.error(f"❌ Failed to initialize SpecAgent: {e}")
-    spec_agent = None
-
+logger = logging.getLogger("routes.spec")
 router = APIRouter(prefix="/api/spec", tags=["specification"])
+
+# Global agent handle
+spec_agent: Optional[SpecAgent] = None
+MODEL_ID = None
+BASE_URL = None
+VECTOR_DB_ID = None
+
+def set_spec_agent(agent: SpecAgent, model_id: str = None, base_url: str = None, vector_db_id: str = None):
+    global spec_agent, MODEL_ID, BASE_URL, VECTOR_DB_ID
+    spec_agent = agent
+    if model_id:
+        MODEL_ID = model_id
+    if base_url:
+        BASE_URL = base_url
+    if vector_db_id:
+        VECTOR_DB_ID = vector_db_id
+    logger.info("SpecAgent set in spec route")
 
 # Request/Response Models
 class SpecRequest(BaseModel):
@@ -78,30 +72,19 @@ class HealthResponse(BaseModel):
 # Routes
 @router.post("/generate", response_model=SpecResponse)
 async def generate_spec(req: SpecRequest):
-    """
-    Generate a technical specification from infrastructure code and context
-    
-    This endpoint analyzes the provided code and context to create a structured
-    specification that can be used for Ansible playbook generation.
-    """
     if not spec_agent:
         logger.error("SpecAgent not available for request")
         raise HTTPException(
             status_code=503, 
             detail="Specification service unavailable - SpecAgent failed to initialize"
         )
-    
     try:
-        logger.info(f"🔄 Generating spec for {len(req.code)} chars of code")
-        
-        # Generate specification
+        logger.info(f"Generating spec for {len(req.code)} chars of code")
         spec_output = spec_agent.generate_spec(
             code=req.code,
             context=req.context,
             code_summary=req.code_summary
         )
-        
-        # Build response
         response = SpecResponse(
             spec_text=spec_output.raw_spec,
             requirements=spec_output.requirements,
@@ -112,12 +95,10 @@ async def generate_spec(req: SpecRequest):
             complexity_assessment=spec_output.complexity_assessment,
             estimated_tasks=spec_output.estimated_tasks
         )
-        
-        logger.info(f"✅ Spec generated successfully: {spec_output.complexity_assessment} complexity, {spec_output.estimated_tasks} tasks")
+        logger.info(f"Spec generated successfully: {spec_output.complexity_assessment} complexity, {spec_output.estimated_tasks} tasks")
         return response
-        
     except Exception as e:
-        logger.exception(f"❌ Spec generation failed: {e}")
+        logger.exception(f"Spec generation failed: {e}")
         raise HTTPException(
             status_code=500, 
             detail=f"Failed to generate specification: {str(e)}"
@@ -125,16 +106,12 @@ async def generate_spec(req: SpecRequest):
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
-    """
-    Check the health status of the specification service
-    """
     if not spec_agent:
         return HealthResponse(
             status="unhealthy",
             model_id="unknown",
             details={"error": "SpecAgent not initialized"}
         )
-    
     try:
         health_result = spec_agent.health_check()
         return HealthResponse(
@@ -146,15 +123,12 @@ async def health_check():
         logger.exception(f"Health check failed: {e}")
         return HealthResponse(
             status="unhealthy",
-            model_id=MODEL_ID,
+            model_id=MODEL_ID if MODEL_ID else "unknown",
             details={"error": str(e)}
         )
 
 @router.get("/models")
 async def get_model_info():
-    """
-    Get information about the current model configuration
-    """
     return {
         "model_id": MODEL_ID,
         "base_url": BASE_URL,

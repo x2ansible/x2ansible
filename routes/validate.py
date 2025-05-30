@@ -1,5 +1,3 @@
-# routes/validate.py
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
@@ -8,18 +6,17 @@ import asyncio
 
 from agents.validation_agent import ValidationAgent
 
-# Setup logger
-logger = logging.getLogger("ValidateRoute")
-
+logger = logging.getLogger("routes.validate")
 router = APIRouter()
 
-# Global validation agent instance (will be initialized in main.py)
+# Global validation agent instance (set in main.py)
 validation_agent: Optional[ValidationAgent] = None
 
 def set_validation_agent(agent: ValidationAgent):
     """Set the global validation agent instance."""
     global validation_agent
     validation_agent = agent
+    logger.info("ValidationAgent set in validate route")
 
 class ValidateRequest(BaseModel):
     playbook: str
@@ -63,39 +60,31 @@ async def validate_playbook(req: ValidateRequest):
     This endpoint provides a fully agentic approach to playbook validation.
     """
     if not validation_agent:
-        logger.error("❌ ValidationAgent not initialized")
+        logger.error("ValidationAgent not initialized")
         raise HTTPException(
             status_code=500, 
             detail="Validation service not available - agent not initialized"
         )
-    
-    logger.info(f"🚀 Received validation request: {len(req.playbook)} chars, profile: {req.lint_profile}")
+
+    logger.info(f"Received validation request: {len(req.playbook)} chars, profile: {req.lint_profile}")
     
     try:
-        # Call the validation agent asynchronously
         agent_result = await validation_agent.validate_playbook(
             playbook=req.playbook,
             lint_profile=req.lint_profile
         )
         
-        logger.info(f"📋 Agent validation completed: success={agent_result.get('success')}, passed={agent_result.get('validation_passed')}")
+        logger.info(f"Agent validation completed: success={agent_result.get('success')}, passed={agent_result.get('validation_passed')}")
         
-        # Convert agent result to API response format
-        issues = []
-        for issue_data in agent_result.get("issues", []):
-            issues.append(ValidationIssue(**{
-                k: v for k, v in issue_data.items() 
-                if k in ValidationIssue.__fields__
-            }))
+        issues = [
+            ValidationIssue(**{k: v for k, v in issue_data.items() if k in ValidationIssue.__fields__})
+            for issue_data in agent_result.get("issues", [])
+        ]
+        recommendations = [
+            ValidationRecommendation(**{k: v for k, v in rec_data.items() if k in ValidationRecommendation.__fields__})
+            for rec_data in agent_result.get("recommendations", [])
+        ]
         
-        recommendations = []
-        for rec_data in agent_result.get("recommendations", []):
-            recommendations.append(ValidationRecommendation(**{
-                k: v for k, v in rec_data.items() 
-                if k in ValidationRecommendation.__fields__
-            }))
-        
-        # Build the response
         response = ValidateResponse(
             success=agent_result.get("success", False),
             validation_passed=agent_result.get("validation_passed", False),
@@ -115,25 +104,23 @@ async def validate_playbook(req: ValidateRequest):
             }
         )
         
-        # Log summary
         if response.validation_passed:
-            logger.info("✅ Playbook validation PASSED via agent")
+            logger.info("Playbook validation PASSED via agent")
         else:
-            logger.warning(f"❌ Playbook validation FAILED via agent: {len(issues)} issues found")
+            logger.warning(f"Playbook validation FAILED via agent: {len(issues)} issues found")
         
         return response
         
     except asyncio.TimeoutError:
         error_msg = "Agent validation timed out"
-        logger.error(f"⏰ {error_msg}")
+        logger.error(error_msg)
         raise HTTPException(status_code=408, detail=error_msg)
         
     except Exception as e:
         error_msg = f"Agent validation failed: {str(e)}"
-        logger.error(f"💥 {error_msg}")
+        logger.error(error_msg)
         logger.exception("Full validation error details:")
         raise HTTPException(status_code=500, detail=error_msg)
-
 
 @router.get("/validate/health")
 async def validation_health():
@@ -144,7 +131,6 @@ async def validation_health():
             "message": "ValidationAgent not initialized",
             "agent_available": False
         }
-    
     return {
         "status": "healthy",
         "message": "ValidationAgent ready",

@@ -1,3 +1,9 @@
+# agents/classifier_agent.py
+"""
+Complete ClassifierAgent with config system integration.
+Instructions are loaded from config/agents.yaml and can be updated via admin panel.
+"""
+
 import logging
 import time
 import re
@@ -8,6 +14,9 @@ import httpx
 from llama_stack_client import Agent
 from llama_stack_client.types import UserMessage
 from utils.utils import step_printer
+
+# Import our config system
+from config.agent_config import get_agent_instructions, get_config
 
 # Configure logging
 logger = logging.getLogger("ClassifierAgent")
@@ -31,8 +40,21 @@ _MANUAL_ESTIMATES: Dict[str, float] = {
 }
 
 @dataclass
+class PatternAnalysis:
+    likely_iac: bool = False
+    detected_tool: str = "unknown"
+    confidence_score: float = 0.0
+    pattern_matches: Dict[str, int] = None
+    strongest_indicators: List[str] = None
+    
+    def __post_init__(self):
+        if self.pattern_matches is None:
+            self.pattern_matches = {}
+        if self.strongest_indicators is None:
+            self.strongest_indicators = []
+
+@dataclass
 class ClassificationResult:
-    """Data class for structured classification results."""
     classification: str = ""
     summary: str = ""
     detailed_analysis: str = ""
@@ -43,175 +65,390 @@ class ClassificationResult:
     complexity_level: str = ""
     convertible: bool = True
     conversion_notes: str = ""
+    # New fields for transparency
+    pattern_analysis: PatternAnalysis = None
+    confidence_source: str = "ai_only"
+    override_applied: bool = False
+    override_reason: str = ""
+    original_ai_decision: Optional[bool] = None
     
     def __post_init__(self):
         if self.resources is None:
             self.resources = []
         if self.key_operations is None:
             self.key_operations = []
+        if self.pattern_analysis is None:
+            self.pattern_analysis = PatternAnalysis()
 
 class ClassificationError(Exception):
-    """Custom exception for classification-related errors."""
     pass
 
 class ClassifierAgent:
-    """
-    Purely agentic Infrastructure-as-Code classifier.
-    
-    This agent relies entirely on LLM intelligence for decision-making.
-    Code only handles I/O, formatting, and basic data processing.
-    """
-    
     def __init__(self, client: Any, model: str, timeout: int = 30):
-        """
-        Initialize the purely agentic ClassifierAgent.
-        
-        Args:
-            client: LLama stack client instance
-            model: Model identifier to use
-            timeout: Request timeout in seconds
-        """
         self.timeout = timeout
-        self.agent = Agent(
-            client=client,
-            model=model,
-            instructions=self._get_comprehensive_agent_instructions()
+        self.client = client
+        self.model = model
+        self.config = get_config()
+        
+        # Initialize agent with config-driven instructions
+        self._initialize_agent()
+        
+        # Keep track of last config version to detect changes
+        self._last_instructions_hash = hash(self._get_current_instructions())
+        
+        # Pattern definitions for pre-screening
+        self.iac_patterns = {
+            'terraform': {
+                'patterns': [
+                    r'resource\s+"[\w_-]+"',
+                    r'provider\s+"[\w_-]+"',
+                    r'variable\s+"[\w_-]+"',
+                    r'data\s+"[\w_-]+"',
+                    r'output\s+"[\w_-]+"',
+                    r'module\s+"[\w_-]+"'
+                ],
+                'keywords': ['terraform', '.tf', 'hcl']
+            },
+            'chef': {
+                'patterns': [
+                    r'cookbook\s+["\'][\w_-]+["\']',
+                    r'recipe\s+["\'][\w_-]+["\']',
+                    r'package\s+["\'][\w_-]+["\'].*do',
+                    r'service\s+["\'][\w_-]+["\'].*do',
+                    r'file\s+["\'][\w/_.-]+["\'].*do',
+                    r'action\s+:(install|enable|start|stop|restart)'
+                ],
+                'keywords': ['chef', 'cookbook', 'recipe', 'do\s+action']
+            },
+            'puppet': {
+                'patterns': [
+                    r'class\s+[\w:_-]+',
+                    r'define\s+[\w:_-]+',
+                    r'package\s*\{[^}]*\}',
+                    r'service\s*\{[^}]*\}',
+                    r'file\s*\{[^}]*\}',
+                    r'ensure\s*=>\s*(present|installed|running|stopped)',
+                    r'notify\s*=>\s*Service\['
+                ],
+                'keywords': ['puppet', 'manifests', 'ensure =>', 'notify =>']
+            },
+            'ansible': {
+                'patterns': [
+                    r'^hosts:\s*\w+',
+                    r'^tasks:\s*$',
+                    r'^\s*-\s+name:\s*',
+                    r'playbook',
+                    r'roles:\s*$',
+                    r'vars:\s*$'
+                ],
+                'keywords': ['ansible', 'playbook', 'hosts:', 'tasks:']
+            },
+            'cloudformation': {
+                'patterns': [
+                    r'AWSTemplateFormatVersion',
+                    r'Resources:\s*$',
+                    r'Parameters:\s*$',
+                    r'Outputs:\s*$',
+                    r'Type:\s*AWS::'
+                ],
+                'keywords': ['cloudformation', 'aws template', 'resources:']
+            },
+            'docker': {
+                'patterns': [
+                    r'^FROM\s+[\w/:.-]+',
+                    r'^RUN\s+',
+                    r'^COPY\s+',
+                    r'^ADD\s+',
+                    r'^WORKDIR\s+',
+                    r'^EXPOSE\s+\d+',
+                    r'^CMD\s+',
+                    r'^ENTRYPOINT\s+'
+                ],
+                'keywords': ['dockerfile', 'docker', 'container']
+            },
+            'kubernetes': {
+                'patterns': [
+                    r'apiVersion:\s*[\w/]+',
+                    r'kind:\s*\w+',
+                    r'metadata:\s*$',
+                    r'spec:\s*$',
+                    r'selector:\s*$'
+                ],
+                'keywords': ['kubernetes', 'kubectl', 'k8s', 'apiversion']
+            },
+            'bash': {
+                'patterns': [
+                    r'#!/bin/bash',
+                    r'#!/bin/sh',
+                    r'systemctl\s+(start|stop|enable|disable)',
+                    r'apt-get\s+(install|update|upgrade)',
+                    r'yum\s+(install|update)',
+                    r'service\s+\w+\s+(start|stop|restart)'
+                ],
+                'keywords': ['bash', 'shell', 'systemctl', 'service']
+            },
+            'powershell': {
+                'patterns': [
+                    r'Install-WindowsFeature',
+                    r'New-Item\s+.*-ItemType',
+                    r'Set-Service',
+                    r'Start-Service',
+                    r'Get-Service',
+                    r'\$\w+\s*=\s*'
+                ],
+                'keywords': ['powershell', 'install-windowsfeature', 'set-service']
+            }
+        }
+        
+        logger.info(f"ClassifierAgent initialized with model: {model}")
+
+    def _get_current_instructions(self) -> str:
+        """Get current instructions from config system"""
+        instructions = get_agent_instructions('classifier')
+        if not instructions:
+            # Fallback to default if config system fails
+            logger.warning("No instructions found in config, using fallback")
+            return self._get_fallback_instructions()
+        return instructions
+
+    def _get_fallback_instructions(self) -> str:
+        """Fallback instructions if config system fails"""
+        return """You are an expert Infrastructure-as-Code analyst with deep knowledge of infrastructure automation tools.
+
+MISSION:
+Analyze code to determine if it's infrastructure automation that can be converted to Ansible playbooks.
+
+INFRASTRUCTURE-AS-CODE INDICATORS:
+Look for these patterns that indicate infrastructure automation:
+
+TERRAFORM: resource, provider, variable blocks; HCL syntax; AWS/Azure/GCP resources
+CHEF: cookbook, recipe keywords; package/service/file resources; Ruby syntax with do/end
+PUPPET: class, define keywords; package/service/file resources; ensure => syntax
+ANSIBLE: hosts:, tasks:, playbook structure; YAML format
+CLOUDFORMATION: AWSTemplateFormatVersion, Resources, AWS:: types
+DOCKER: FROM, RUN, COPY instructions; container definitions
+KUBERNETES: apiVersion, kind, metadata; YAML manifests
+BASH/SHELL: systemctl, apt-get, yum, service commands for system management
+POWERSHELL: Install-WindowsFeature, Set-Service, system administration cmdlets
+
+Provide balanced analysis based on what you actually observe in the code."""
+
+    def _initialize_agent(self):
+        """Initialize the LlamaStack agent with current config instructions"""
+        try:
+            current_instructions = self._get_current_instructions()
+            self.agent = Agent(
+                client=self.client,
+                model=self.model,
+                instructions=current_instructions
+            )
+            logger.info("ClassifierAgent initialized with config-driven instructions")
+        except Exception as e:
+            logger.error(f"Failed to initialize agent with config: {e}")
+            # Create agent with fallback instructions
+            self.agent = Agent(
+                client=self.client,
+                model=self.model,
+                instructions=self._get_fallback_instructions()
+            )
+            logger.warning("ClassifierAgent initialized with fallback instructions")
+
+    def _check_and_reload_config(self):
+        """Check if config has changed and reload agent if needed"""
+        try:
+            current_instructions = self._get_current_instructions()
+            current_hash = hash(current_instructions)
+            
+            if current_hash != self._last_instructions_hash:
+                logger.info("Configuration change detected, reloading agent...")
+                self._initialize_agent()
+                self._last_instructions_hash = current_hash
+                logger.info("Agent successfully reloaded with new configuration")
+        except Exception as e:
+            logger.error(f"Failed to check/reload config: {e}")
+
+    def _pattern_based_screening(self, code: str) -> PatternAnalysis:
+        """Lightweight pattern matching to identify obvious IaC with confidence scoring"""
+        code_lower = code.lower()
+        matches = {}
+        found_indicators = []
+        
+        for tool, config in self.iac_patterns.items():
+            tool_score = 0
+            
+            # Check regex patterns
+            for pattern in config['patterns']:
+                pattern_matches = len(re.findall(pattern, code, re.MULTILINE | re.IGNORECASE))
+                if pattern_matches > 0:
+                    tool_score += pattern_matches
+                    found_indicators.append(f"{tool}:{pattern}")
+            
+            # Check keyword presence
+            for keyword in config['keywords']:
+                if re.search(r'\b' + re.escape(keyword.lower()) + r'\b', code_lower):
+                    tool_score += 1
+                    found_indicators.append(f"{tool}:keyword:{keyword}")
+            
+            matches[tool] = tool_score
+        
+        best_match = max(matches.items(), key=lambda x: x[1])
+        total_matches = sum(matches.values())
+        
+        # Calculate confidence based on match strength and exclusivity
+        if best_match[1] == 0:
+            confidence = 0.0
+        else:
+            # Higher confidence if one tool dominates
+            dominance = best_match[1] / max(total_matches, 1)
+            # Confidence increases with number of matches
+            match_strength = min(best_match[1] / 5.0, 1.0)
+            confidence = dominance * match_strength
+        
+        return PatternAnalysis(
+            likely_iac=best_match[1] > 0,
+            detected_tool=best_match[0] if best_match[1] > 0 else "unknown",
+            confidence_score=round(confidence, 3),
+            pattern_matches=matches,
+            strongest_indicators=found_indicators[:5]  # Top 5 indicators
         )
-        logger.info(f"Purely agentic ClassifierAgent initialized with model: {model}")
 
-    def _get_comprehensive_agent_instructions(self) -> str:
-        """
-        Comprehensive agent instructions that encode ALL business logic.
-        The LLM must make ALL decisions based on these instructions.
-        """
-        return """You are an expert Infrastructure-as-Code analyst and Ansible conversion specialist with deep knowledge of ALL infrastructure automation tools and patterns.
+    def _build_enhanced_prompt(self, code: str, pattern_analysis: PatternAnalysis) -> str:
+        """Build context-enhanced prompt for small models"""
+        detected_tool = pattern_analysis.detected_tool
+        
+        # Tool-specific examples to help small models
+        tool_examples = {
+            'chef': """
+CHEF CODE PATTERNS TO RECOGNIZE:
+- cookbook 'apache2'
+- package 'httpd' do action :install end
+- service 'apache2' do action [:enable, :start] end
+- file '/etc/config' do content 'data' end
+            """,
+            'puppet': """
+PUPPET CODE PATTERNS TO RECOGNIZE:
+- class apache::install { package { 'apache2': ensure => installed } }
+- service { 'apache2': ensure => running, enable => true }
+- file { '/etc/apache2/apache2.conf': ensure => present }
+            """,
+            'terraform': """
+TERRAFORM CODE PATTERNS TO RECOGNIZE:
+- resource "aws_instance" "web" { ami = "ami-12345" }
+- provider "aws" { region = "us-east-1" }
+- variable "instance_type" { default = "t2.micro" }
+            """
+        }
+        
+        context = ""
+        if detected_tool in tool_examples:
+            context = f"""
+DETECTED TOOL: {detected_tool.upper()} (confidence: {pattern_analysis.confidence_score:.2f})
+Pattern indicators found: {', '.join(pattern_analysis.strongest_indicators[:3])}
 
-CORE MISSION:
-Your PRIMARY goal is to identify infrastructure automation code that CAN be converted to Ansible playbooks. You are an optimistic conversion advocate who finds solutions, not obstacles.
+{tool_examples[detected_tool]}
+"""
+        
+        return f"""{context}
 
-CRITICAL CONVERSION RULE:
-NEVER say "Conversion Not Recommended" or suggest code is not convertible UNLESS it is absolutely, definitively NOT infrastructure automation code at all. If there's ANY infrastructure element present, mark it as convertible and explain the approach.
+Analyze this code for Ansible conversion potential:
 
-FUNDAMENTAL PRINCIPLES:
-1. ASSUME CONVERTIBLE: Any infrastructure automation code is convertible to Ansible - no exceptions
-2. BE GENEROUS: Complex, legacy, unusual, or poorly written infrastructure code is still convertible
-3. THINK CREATIVELY: Consider partial conversions, hybrid approaches, and innovative solutions
-4. FIND THE PATH: Your job is to identify HOW to convert, not whether to convert
-5. INFRASTRUCTURE = CONVERTIBLE: If it touches infrastructure in any way, it can be converted
+<CODE>
+{code}
+</CODE>
 
-WHAT IS INFRASTRUCTURE-AS-CODE (ALWAYS Mark as Convertible: YES):
-- Server/VM provisioning and configuration (AWS EC2, Azure VMs, GCP instances, etc.)
-- Cloud resource management (S3 buckets, databases, networks, load balancers)
-- Container orchestration (Docker, Kubernetes, Docker Compose)
-- Configuration management (system settings, software installation, user management)
-- Network configuration (firewalls, security groups, VPCs, subnets)
-- Database setup and management (MySQL, PostgreSQL, MongoDB setup)
-- Application deployment and configuration
-- CI/CD pipeline definitions and deployment scripts
-- Monitoring, logging, and alerting setup
-- Infrastructure provisioning scripts (even if basic or incomplete)
-- System administration automation (user management, file permissions, etc.)
-- Cloud service configuration and management
-- Microservices deployment patterns
-- Infrastructure templates and blueprints
-- Environment setup and teardown scripts
-- Package installation and software deployment
-- Service configuration and management
-- Security configuration (SSL, certificates, access controls)
-- Backup and disaster recovery automation
-- Resource scaling and management scripts
+Provide your analysis in this EXACT format:
 
-TOOLS YOU RECOGNIZE (ALL Convertible to Ansible - Mark Convertible: YES):
-Core IaC: Terraform, CloudFormation, Pulumi, CDK, ARM templates, Bicep
-Config Management: Chef, Puppet, SaltStack, Ansible itself
-Containers: Docker, Kubernetes, Helm, Docker Compose, Kustomize
-Cloud: AWS CLI scripts, Azure CLI, gcloud scripts, cloud-specific tools
-Shell: Bash, PowerShell, Zsh scripts that manage infrastructure
-Legacy: Custom scripts, makefiles, or any automation that touches infrastructure
-Orchestration: Nomad, Consul, Vault configuration
-CI/CD: Jenkins, GitLab CI, GitHub Actions (when doing deployment)
-Monitoring: Prometheus, Grafana, ELK stack configurations
-Service Mesh: Istio, Linkerd configurations
+Tool/Language: [The actual tool/language you identify from the code syntax]
+Summary: [Concise summary of what this code does]
+Detailed Analysis: [Technical analysis of the infrastructure automation]
+Resources/Components:
+- [Infrastructure resource 1]
+- [Infrastructure resource 2]
+Key Operations:
+- [Key operation 1]
+- [Key operation 2]
+Dependencies: [External dependencies and requirements]
+Configuration Details: [Important configuration aspects]
+Complexity Level: [Low/Medium/High/Very High]
+Convertible: [YES/NO - can this be converted to Ansible?]
+Conversion Notes: [How to convert or why not convertible]"""
 
-WHAT IS NOT CONVERTIBLE (EXTREMELY Rare - Only Mark Convertible: NO for these):
-- Pure business application source code (e.g., React components, Python web apps, Java business logic)
-- Data-only files (CSV, JSON data files without automation context)
-- Documentation files (README, markdown files, pure text)
-- Completely corrupted or meaningless gibberish
-- Personal utility scripts with no infrastructure component (file organizers, calculators)
-
-CONVERSION GUIDANCE - Always Provide Positive Path Forward:
-- Standard IaC Tools: "Direct conversion using Ansible equivalents and established patterns"
-- Shell Scripts: "Convert to Ansible tasks using command, shell, and service modules"
-- Complex Scenarios: "Staged conversion approach with modular Ansible playbooks"
-- Legacy Code: "Modernize through Ansible with custom modules if needed"
-- Partial IaC: "Extract and convert infrastructure components, supplement missing parts"
-- Mixed Code: "Separate infrastructure elements for Ansible conversion"
-
-COMPLEXITY ASSESSMENT (But Always Convertible):
-- Low: Standard patterns, straightforward conversion
-- Medium: Some refactoring needed, moderate complexity
-- High: Significant restructuring required, complex dependencies
-- Very High: Major refactoring needed, but still convertible with effort
-
-MANDATORY CONVERSION NOTES FORMAT:
-For Convertible: YES (which should be 99.9% of cases):
-- Always explain HOW to convert
-- Mention specific Ansible modules or approaches
-- Address any challenges and solutions
-- Be encouraging and solution-focused
-- Example: "Convert using Ansible's cloud modules with staged approach for complex dependencies"
-
-For Convertible: NO (only for non-infrastructure code):
-- Clearly state why it's not infrastructure automation
-- Be definitive about the lack of infrastructure elements
-- Example: "This is application business logic with no infrastructure automation components"
-
-ANALYSIS DEPTH:
-Show you understand the infrastructure automation and conversion path:
-- What infrastructure is being managed
-- How the current automation works
-- Specific Ansible conversion approach
-- Modules and strategies to use
-- How to handle challenges
-- The value of converting to Ansible
-
-Remember: You are a conversion advocate. Your default answer is "YES, this can be converted to Ansible" with a clear explanation of how. Only say NO if there are absolutely zero infrastructure automation elements present."""
+    def _make_intelligent_decision(self, pattern_analysis: PatternAnalysis, ai_result: ClassificationResult) -> ClassificationResult:
+        """Combine pattern analysis and AI decision intelligently"""
+        
+        # High confidence pattern analysis can override false negatives
+        if (pattern_analysis.confidence_score >= 0.7 and 
+            pattern_analysis.likely_iac and 
+            not ai_result.convertible and
+            pattern_analysis.detected_tool in ['chef', 'puppet', 'terraform', 'ansible', 'cloudformation']):
+            
+            # Apply transparent override
+            ai_result.convertible = True
+            ai_result.override_applied = True
+            ai_result.override_reason = f"High-confidence {pattern_analysis.detected_tool} patterns detected (score: {pattern_analysis.confidence_score:.2f})"
+            ai_result.original_ai_decision = False
+            ai_result.conversion_notes += f" [Override Applied: {ai_result.override_reason}]"
+            ai_result.confidence_source = "pattern_override"
+            
+            logger.info(f"Applied intelligent override: {ai_result.override_reason}")
+            
+        # Medium confidence - add context but trust AI
+        elif pattern_analysis.confidence_score >= 0.4:
+            ai_result.confidence_source = "ai_with_pattern_context"
+            
+        # Low confidence - pure AI decision
+        else:
+            ai_result.confidence_source = "ai_only"
+        
+        # Always add pattern analysis for transparency
+        ai_result.pattern_analysis = pattern_analysis
+        
+        return ai_result
 
     def classify_and_summarize(self, code: str) -> Dict[str, Any]:
-        """
-        Perform purely agentic classification with minimal post-processing.
-        
-        Args:
-            code: The code snippet to analyze
-            
-        Returns:
-            Dictionary containing detailed analysis results
-            
-        Raises:
-            ClassificationError: If classification fails
-        """
+        """Enhanced classification with two-stage analysis and config checking"""
         if not self._is_valid_input(code):
             raise ClassificationError("Invalid or empty code snippet provided")
 
-        logger.info("🤖 Starting purely agentic IaC analysis")
+        # Check for config changes before processing
+        self._check_and_reload_config()
+
+        logger.info("🤖 Starting config-driven two-stage IaC analysis")
         start_time = time.perf_counter()
 
         try:
-            # Let the LLM make ALL the decisions
-            raw_result = self._query_agent(code)
-            
-            # Only do basic formatting and data structure conversion
+            # Stage 1: Pattern-based pre-screening
+            pattern_analysis = self._pattern_based_screening(code)
+            logger.info(f"📊 Pattern analysis: {pattern_analysis.detected_tool} "
+                       f"(confidence: {pattern_analysis.confidence_score:.2f})")
+
+            # Stage 2: AI analysis with context
+            if pattern_analysis.confidence_score >= 0.3:
+                enhanced_prompt = self._build_enhanced_prompt(code, pattern_analysis)
+                raw_result = self._query_agent_with_enhanced_prompt(enhanced_prompt)
+            else:
+                raw_result = self._query_agent(code)
+
+            # Parse and structure the result
             structured_result = self._format_agent_response(raw_result)
             
-            # Add performance metrics (pure calculation, no logic)
+            # Stage 3: Intelligent decision making
+            final_result = self._make_intelligent_decision(pattern_analysis, structured_result)
+            
+            # Add performance metrics
             duration_ms = (time.perf_counter() - start_time) * 1000
-            structured_result.update(self._add_performance_metrics(structured_result, duration_ms))
+            result_dict = self._result_to_dict(final_result)
+            result_dict.update(self._add_performance_metrics(result_dict, duration_ms))
             
-            logger.info(f"✅ Agentic analysis complete: {structured_result['classification']} "
-                       f"(convertible: {structured_result['convertible']}) in {duration_ms:.2f}ms")
+            # Add config metadata
+            result_dict['config_source'] = 'dynamic_config'
+            result_dict['instructions_hash'] = self._last_instructions_hash
             
-            return structured_result
+            logger.info(f"✅ Config-driven analysis complete: {result_dict['classification']} "
+                       f"(convertible: {result_dict['convertible']}, "
+                       f"source: {result_dict['confidence_source']}) in {duration_ms:.2f}ms")
+            
+            return result_dict
             
         except httpx.HTTPError as e:
             logger.error(f"HTTP error during classification: {e}", exc_info=True)
@@ -220,110 +457,82 @@ Remember: You are a conversion advocate. Your default answer is "YES, this can b
             logger.error(f"Unexpected error during classification: {e}", exc_info=True)
             raise ClassificationError(f"Classification failed: {str(e)}") from e
 
+    def _query_agent_with_enhanced_prompt(self, enhanced_prompt: str) -> str:
+        """Query agent with enhanced context"""
+        session_id = self.agent.create_session("enhanced_analysis")
+        turn = self.agent.create_turn(
+            session_id=session_id,
+            messages=[UserMessage(role="user", content=enhanced_prompt)],
+            stream=False
+        )
+        step_printer(turn.steps)
+        return turn.output_message.content
+
     def _is_valid_input(self, code: str) -> bool:
-        """Basic input validation - no business logic."""
         return bool(code and code.strip() and len(code.strip()) > 5)
 
     def _query_agent(self, code: str) -> str:
-        """Query the LLM agent and return raw response."""
+        """Standard agent query - maintains original behavior"""
         session_id = self.agent.create_session("pure_agentic_analysis")
-        prompt = self._build_agentic_prompt(code)
-        
+        prompt = self._build_standard_prompt(code)
         turn = self.agent.create_turn(
             session_id=session_id,
             messages=[UserMessage(role="user", content=prompt)],
             stream=False
         )
-        
         step_printer(turn.steps)
         return turn.output_message.content
 
-    def _build_agentic_prompt(self, code: str) -> str:
-        """
-        Build prompt that relies entirely on agent intelligence.
-        No hard-coded logic hints or constraints.
-        """
-        return f"""Analyze this code for Ansible conversion potential. Use your expert knowledge and the comprehensive instructions you've been given to make ALL decisions about classification, convertibility, and conversion approach.
+    def _build_standard_prompt(self, code: str) -> str:
+        """Standard prompt without pattern context"""
+        return f"""Analyze this code for Ansible conversion potential:
 
-CRITICAL: Accurately identify the ACTUAL tool/language present in the code. Do NOT infer, guess, or assume. Look at the actual syntax, keywords, file structure, and patterns to determine what tool was ACTUALLY used to write this code.
-
-CODE TO ANALYZE:
-```
+<CODE>
 {code}
-```
+</CODE>
 
-Provide your expert analysis in this EXACT format:
+Provide your analysis in this EXACT format:
 
-Tool/Language: [ACCURATELY identify the actual tool/language used - examine syntax, keywords, structure. Examples: Terraform, Puppet, Chef, CloudFormation, Bash, PowerShell, Docker, Kubernetes, etc. Do NOT say "Ansible" unless it actually IS Ansible code]
-Summary: [Your concise summary of what this infrastructure code does]
-Detailed Analysis: [Your detailed technical analysis of the infrastructure automation]
+Tool/Language: [The actual tool/language you identify]
+Summary: [Concise summary]
+Detailed Analysis: [Technical analysis]
 Resources/Components:
-- [Infrastructure resource or component 1]
-- [Infrastructure resource or component 2]
-- [Continue listing all infrastructure elements you identify]
+- [Resource 1]
+- [Resource 2]
 Key Operations:
-- [Key operation 1: your description]
-- [Key operation 2: your description]  
-- [Continue listing all key infrastructure operations]
-Dependencies: [Your assessment of external dependencies and requirements]
-Configuration Details: [Your analysis of important configuration aspects]
-Complexity Level: [Your expert assessment: Low/Medium/High/Very High]
-Convertible: [Your decision: YES/NO based on your expert analysis]
-Conversion Notes: [Your expert guidance on conversion approach, challenges, or why not convertible]
+- [Operation 1]
+- [Operation 2]
+Dependencies: [Dependencies]
+Configuration Details: [Configuration aspects]
+Complexity Level: [Low/Medium/High/Very High]
+Convertible: [YES/NO]
+Conversion Notes: [Conversion approach or reasoning]"""
 
-IMPORTANT IDENTIFICATION GUIDELINES:
-- Terraform: Look for .tf files, HCL syntax, "resource", "provider", "variable" blocks
-- Puppet: Look for .pp files, Puppet DSL, "class", "define", "package", "service", "file" resources
-- Chef: Look for .rb files, Ruby syntax with Chef DSL, "cookbook", "recipe", "package", "service" 
-- CloudFormation: Look for JSON/YAML with "AWSTemplateFormatVersion", "Resources", "Parameters"
-- Ansible: Look for YAML with "hosts:", "tasks:", "playbook", "roles" - only if actually present
-- Docker: Look for Dockerfile, docker-compose.yml, Docker commands
-- Bash/Shell: Look for shell syntax, #!/bin/bash, shell commands and variables
-- PowerShell: Look for PowerShell syntax, cmdlets, .ps1 patterns
-
-Do NOT assume or infer - identify what is ACTUALLY there based on concrete syntax evidence."""
-
-    def _format_agent_response(self, raw_content: str) -> Dict[str, Any]:
-        """
-        Format agent response into structured data.
-        This is pure data processing - no business logic or overrides.
-        """
+    def _format_agent_response(self, raw_content: str) -> ClassificationResult:
+        """Parse agent response into structured result"""
         lines = [line.strip() for line in raw_content.strip().split('\n') if line.strip()]
-        
-        # Initialize result structure
         result = ClassificationResult()
-        
         current_section = None
         current_content = []
 
-        # Parse the structured response
         for line in lines:
             section_type = self._identify_section_type(line)
-            
             if section_type:
-                # Process previous section
                 if current_section:
                     self._populate_result_section(result, current_section, current_content)
-                
-                # Start new section
                 current_section = section_type
                 current_content = [self._extract_line_value(line)]
             else:
-                # Continue current section
                 if current_section and line:
                     current_content.append(line)
-
-        # Process final section
+        
         if current_section:
             self._populate_result_section(result, current_section, current_content)
 
-        # Convert to dictionary (pure data transformation)
-        return self._result_to_dict(result)
+        return result
 
     def _identify_section_type(self, line: str) -> Optional[str]:
-        """Identify section type from line - pure pattern matching."""
         clean_line = line.lstrip('* ').strip().lower()
-        
         section_patterns = {
             'tool/language:': 'classification',
             'summary:': 'summary',
@@ -336,32 +545,25 @@ Do NOT assume or infer - identify what is ACTUALLY there based on concrete synta
             'convertible:': 'convertible',
             'conversion notes:': 'conversion_notes'
         }
-        
         for pattern, section in section_patterns.items():
             if clean_line.startswith(pattern):
                 return section
-        
         return None
 
     def _extract_line_value(self, line: str) -> str:
-        """Extract value from a header line - pure string processing."""
         cleaned = re.sub(r"[*_]+", "", line).strip()
         parts = cleaned.split(':', 1)
         return parts[1].strip() if len(parts) == 2 else ""
 
     def _populate_result_section(self, result: ClassificationResult, section: str, content: List[str]) -> None:
-        """Populate result section - pure data assignment."""
         if not content:
             return
-
         if section == "classification":
             result.classification = content[0].strip()
-            
-        elif section in ["summary", "detailed_analysis", "dependencies", 
-                        "configuration_details", "complexity_level", "conversion_notes"]:
+        elif section in ["summary", "detailed_analysis", "dependencies",
+                         "configuration_details", "complexity_level", "conversion_notes"]:
             text = ' '.join(content).strip()
             setattr(result, section, text)
-            
         elif section in ["resources", "key_operations"]:
             items = []
             for line in content:
@@ -370,26 +572,20 @@ Do NOT assume or infer - identify what is ACTUALLY there based on concrete synta
                     items.append(line[1:].strip())
                 elif line and not line.startswith('['):
                     items.append(line)
-            
             clean_items = [item.strip() for item in items if item.strip()]
             setattr(result, section, clean_items)
-            
         elif section == "convertible":
             conv_text = ' '.join(content).lower().strip()
-            # Simple text parsing - let the LLM make the decision
             result.convertible = self._parse_yes_no(conv_text)
 
     def _parse_yes_no(self, text: str) -> bool:
-        """Parse yes/no from text - pure text processing."""
         if not text:
             return False
-        
-        first_word = text.split()[0] if text.split() else ""
-        return first_word.lower() in ['yes', 'true', '1']
+        return bool(re.search(r"\byes\b", text, re.I))
 
     def _result_to_dict(self, result: ClassificationResult) -> Dict[str, Any]:
-        """Convert result object to dictionary - pure data transformation."""
-        return {
+        """Convert result to dictionary with transparency fields"""
+        base_dict = {
             "classification": result.classification or "unknown",
             "summary": result.summary or "Analysis completed",
             "detailed_analysis": result.detailed_analysis or "No detailed analysis provided",
@@ -401,24 +597,41 @@ Do NOT assume or infer - identify what is ACTUALLY there based on concrete synta
             "convertible": result.convertible,
             "conversion_notes": result.conversion_notes or "Standard conversion approach applicable"
         }
+        
+        # Add transparency fields
+        if hasattr(result, 'confidence_source'):
+            transparency_fields = {
+                "confidence_source": result.confidence_source,
+                "override_applied": result.override_applied,
+                "pattern_analysis": {
+                    "detected_tool": result.pattern_analysis.detected_tool,
+                    "confidence_score": result.pattern_analysis.confidence_score,
+                    "likely_iac": result.pattern_analysis.likely_iac,
+                    "strongest_indicators": result.pattern_analysis.strongest_indicators
+                }
+            }
+            
+            if result.override_applied:
+                transparency_fields.update({
+                    "override_reason": result.override_reason,
+                    "original_ai_decision": result.original_ai_decision
+                })
+            
+            base_dict.update(transparency_fields)
+        return base_dict
 
     def _add_performance_metrics(self, result: Dict[str, Any], duration_ms: float) -> Dict[str, Any]:
-        """Add performance metrics - pure calculation."""
         classification = result["classification"].lower()
         manual_estimate_ms = _MANUAL_ESTIMATES.get(classification, _MANUAL_ESTIMATES["unknown"])
         speedup = manual_estimate_ms / duration_ms if duration_ms > 0 else None
-        
         return {
             "duration_ms": round(duration_ms, 2),
             "manual_estimate_ms": manual_estimate_ms,
             "speedup": round(speedup, 2) if speedup else None,
         }
 
+    # Backward compatibility methods
     def get_json_result(self, code: str) -> Dict[str, Any]:
-        """
-        Get classification result in standardized JSON format.
-        Pure I/O wrapper with no business logic.
-        """
         try:
             result = self.classify_and_summarize(code)
             return {
@@ -426,7 +639,7 @@ Do NOT assume or infer - identify what is ACTUALLY there based on concrete synta
                 "data": result,
                 "error": None,
                 "timestamp": time.time(),
-                "version": "3.0-agentic"
+                "version": "4.0-config-enhanced"
             }
         except ClassificationError as e:
             logger.error(f"Classification error: {e}")
@@ -436,7 +649,7 @@ Do NOT assume or infer - identify what is ACTUALLY there based on concrete synta
                 "error": str(e),
                 "error_type": "ClassificationError",
                 "timestamp": time.time(),
-                "version": "3.0-agentic"
+                "version": "4.0-config-enhanced"
             }
         except Exception as e:
             logger.error(f"Unexpected error: {e}", exc_info=True)
@@ -446,41 +659,33 @@ Do NOT assume or infer - identify what is ACTUALLY there based on concrete synta
                 "error": "Unexpected classification failure",
                 "error_type": "UnexpectedError",
                 "timestamp": time.time(),
-                "version": "3.0-agentic"
+                "version": "4.0-config-enhanced"
             }
 
     def classify(self, code: str) -> Dict[str, Any]:
-        """
-        Simplified classification method for backward compatibility.
-        Pure data extraction with no logic.
-        """
         result = self.classify_and_summarize(code)
         return {
             "classification": result["classification"],
             "summary": result["summary"],
             "convertible": result["convertible"],
             "complexity_level": result["complexity_level"],
+            "confidence_source": result["confidence_source"],
+            "override_applied": result["override_applied"],
             "duration_ms": result["duration_ms"],
             "manual_estimate_ms": result["manual_estimate_ms"],
             "speedup": result["speedup"],
         }
 
     def batch_classify(self, code_snippets: List[str]) -> List[Dict[str, Any]]:
-        """
-        Batch classification with pure iteration - no additional logic.
-        """
         results = []
-        logger.info(f"Starting agentic batch classification of {len(code_snippets)} snippets")
-        
+        logger.info(f"Starting config-driven batch classification of {len(code_snippets)} snippets")
         for i, code in enumerate(code_snippets):
             try:
                 result = self.get_json_result(code)
                 result["batch_index"] = i
                 results.append(result)
-                
                 if (i + 1) % 10 == 0:
                     logger.info(f"Processed {i+1}/{len(code_snippets)} snippets")
-                    
             except Exception as e:
                 logger.error(f"Error processing snippet {i}: {e}")
                 results.append({
@@ -489,8 +694,24 @@ Do NOT assume or infer - identify what is ACTUALLY there based on concrete synta
                     "error": str(e),
                     "batch_index": i,
                     "timestamp": time.time(),
-                    "version": "3.0-agentic"
+                    "version": "4.0-config-enhanced"
                 })
-        
-        logger.info(f"Agentic batch classification complete: {len(results)} results")
+        logger.info(f"Config-driven batch classification complete: {len(results)} results")
         return results
+
+    def reload_config(self):
+        """Manually reload configuration - useful for testing"""
+        logger.info("Manual config reload requested")
+        self.config.reload_config()
+        self._check_and_reload_config()
+
+    def get_config_info(self) -> Dict[str, Any]:
+        """Get information about current configuration"""
+        current_instructions = self._get_current_instructions()
+        return {
+            "instructions_length": len(current_instructions),
+            "instructions_hash": hash(current_instructions),
+            "config_file_exists": self.config.config_file.exists(),
+            "agent_initialized": hasattr(self, 'agent') and self.agent is not None,
+            "config_status": self.config.get_config_status()
+        }

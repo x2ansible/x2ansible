@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 import ContextPanel from "@/components/ContextPanel";
 import ContextSidebar from "@/components/ContextSidebar";
@@ -28,6 +29,7 @@ const steps = ["Analyze", "Context", "Convert", "Validate", "Deploy"];
 export default function RunWorkflowPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Core navigation state
   const [step, setStep] = useState(0);
@@ -227,6 +229,14 @@ export default function RunWorkflowPage() {
     console.log("🔍 DEBUG - classificationResult state updated:", classificationResult);
   }, [classificationResult]);
 
+  // Check if user has admin privileges
+  const allowedEmails = ["rbanda@redhat.com"];
+  const isAdmin = session?.user?.email && allowedEmails.includes(session.user.email) ||
+                  process.env.NODE_ENV === "development"; // Allow in dev mode
+
+  // Get current workflow for admin link
+  const currentWorkflow = searchParams.get('workflow') || 'x2ansible';
+
   // Loading state
   if (status === "loading") {
     return (
@@ -260,6 +270,15 @@ export default function RunWorkflowPage() {
           <ThemeToggle />
           <span className="text-sm text-gray-600 dark:text-gray-400">
             Welcome, {session?.user?.name || session?.user?.email}
+            {isAdmin && (
+              <Link
+                href={`/admin?from=${currentWorkflow}`}
+                className="ml-2 px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors cursor-pointer"
+                title="Access Admin Panel"
+              >
+                Admin
+              </Link>
+            )}
           </span>
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
@@ -281,7 +300,7 @@ export default function RunWorkflowPage() {
 
       {/* Mobile Log Toggle */}
       <button
-        className="fixed bottom-4 right-4 z-50 bg-gray-900 text-white rounded-full px-4 py-2 shadow-lg lg:hidden"
+        className="fixed bottom-4 right-4 z-40 bg-gray-900 text-white rounded-full px-4 py-2 shadow-lg lg:hidden"
         onClick={() => setShowAgentLog((prev) => !prev)}
         aria-label="Toggle Agent Log"
       >

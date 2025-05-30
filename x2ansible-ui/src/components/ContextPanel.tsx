@@ -93,7 +93,6 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
       });
       logMessage(`📥 Response: HTTP ${resp.status}`);
 
-      // --- Safe JSON parse with fallback/error ---
       let data: any = null;
       try {
         const contentType = resp.headers.get("content-type");
@@ -139,7 +138,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
     }
   };
 
-  // --- FIXED: Markdown components for syntax highlighting (robust, hydration-error-safe) ---
+  // --- Markdown Components: Hydration-safe code renderer ---
   const markdownComponents = {
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || "");
@@ -151,22 +150,24 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
           </code>
         );
       }
-      // Block code: only return SyntaxHighlighter (renders <pre><code> itself, never inside <p>)
+      // BLOCK: Use fragment to avoid <pre> in <p>
       return (
-        <SyntaxHighlighter
-          style={oneDark}
-          language={match ? match[1] : ""}
-          PreTag="pre"
-          customStyle={{
-            borderRadius: 8,
-            padding: "1em",
-            fontSize: "0.92em",
-            background: "#23272e"
-          }}
-          {...props}
-        >
-          {String(children).replace(/\n$/, "")}
-        </SyntaxHighlighter>
+        <>
+          <SyntaxHighlighter
+            style={oneDark}
+            language={match ? match[1] : ""}
+            PreTag="pre"
+            customStyle={{
+              borderRadius: 8,
+              padding: "1em",
+              fontSize: "0.92em",
+              background: "#23272e"
+            }}
+            {...props}
+          >
+            {String(children).replace(/\n$/, "")}
+          </SyntaxHighlighter>
+        </>
       );
     },
   };
@@ -176,13 +177,12 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
     if (!result) return null;
     const patterns = result.context || [];
     return (
-      <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-2 context-sidebar-scrollbar">
+      <div className="context-results space-y-4">
         {patterns.length === 0 && (
           <div className="text-slate-400 text-center p-4">No Conversion Patterns Found</div>
         )}
         {patterns.map((item, i) => {
           const isExpanded = expandedChunks.has(i);
-          // Show first 12 lines or 800 chars as preview (whichever is less)
           const lines = item.text?.split("\n") || [];
           const preview =
             lines.slice(0, 12).join("\n").slice(0, 800) +
@@ -190,7 +190,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
           const hasMore = lines.length > 12 || (item.text?.length ?? 0) > 800;
 
           return (
-            <div key={i} className="bg-slate-800 rounded border border-slate-600 p-3 mb-2">
+            <div key={i} className="bg-slate-800 rounded-lg border border-slate-600 p-4 mb-2 context-chunk">
               <div className="flex justify-between items-center">
                 <span className="font-semibold text-blue-300">
                   Conversion Pattern {i + 1}
@@ -214,7 +214,7 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
                 </div>
               </div>
               {/* Pretty markdown! */}
-              <div className="mt-2 text-slate-200 text-xs overflow-x-auto prose prose-invert prose-sm max-w-none">
+              <div className="mt-2 text-slate-200 text-xs overflow-x-auto prose prose-invert prose-sm max-w-none context-markdown">
                 <ReactMarkdown components={markdownComponents}>
                   {isExpanded || !hasMore ? item.text : preview}
                 </ReactMarkdown>
@@ -227,13 +227,13 @@ const ContextPanel: React.FC<ContextPanelProps> = ({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto bg-slate-900 rounded-lg p-6 shadow">
+    <div className="w-full max-w-4xl mx-auto bg-slate-900 rounded-lg p-6 shadow context-panel-outer">
       <div className="flex items-center mb-4">
         <MagnifyingGlassIcon className="w-6 h-6 text-blue-400 mr-2" />
         <h2 className="text-white font-bold text-xl">Context Discovery</h2>
       </div>
       <button
-        className={`w-full py-2 rounded-lg font-semibold text-white ${
+        className={`w-full py-2 rounded-lg font-semibold text-white transition-all duration-100 ${
           loading
             ? "bg-gradient-to-r from-blue-500/50 to-cyan-500/50 cursor-not-allowed"
             : hasQueried
