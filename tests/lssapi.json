@@ -5,600 +5,16 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/v1/inference/batch-chat-completion": {
+    "/v1/agents": {
       "post": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_inference_batch_chat_completion_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_inference_batch_chat_completion_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/inference/batch-completion": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_inference_batch_completion_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_inference_batch_completion_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/inference/chat-completion": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_inference_chat_completion_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_inference_chat_completion_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/inference/completion": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_inference_completion_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_inference_completion_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/inference/embeddings": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_inference_embeddings_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_inference_embeddings_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/openai/v1/chat/completions": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_openai_v1_chat_completions_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_openai_v1_chat_completions_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/openai/v1/completions": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_openai_v1_completions_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_openai_v1_completions_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/vector-dbs/{vector_db_id}": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_vector_dbs__vector_db_id__get",
-        "parameters": [
-          {
-            "name": "vector_db_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Vector Db Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_vector_dbs__vector_db_id__delete",
-        "parameters": [
-          {
-            "name": "vector_db_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Vector Db Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/vector-dbs": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_vector_dbs_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_vector_dbs_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_vector_dbs_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/tool-runtime/invoke": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_tool_runtime_invoke_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_tool_runtime_invoke_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/tool-runtime/list-tools": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_tool_runtime_list_tools_get",
-        "parameters": [
-          {
-            "name": "tool_group_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tool Group Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/URL"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Mcp Endpoint"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/tool-runtime/rag-tool/insert": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_tool_runtime_rag_tool_insert_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_tool_runtime_rag_tool_insert_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/tool-runtime/rag-tool/query": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_tool_runtime_rag_tool_query_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_tool_runtime_rag_tool_query_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/datasetio/append-rows/{dataset_id}": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_datasetio_append_rows__dataset_id__post",
-        "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "dataset_id"
-            }
-          }
-        ],
+        "operationId": "endpoint_v1_agents_post",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_datasetio_append_rows__dataset_id__post"
+                "$ref": "#/components/schemas/Body_endpoint_v1_agents_post"
               }
             }
           }
@@ -625,22 +41,11 @@
             }
           }
         }
-      }
-    },
-    "/v1/datasetio/iterrows/{dataset_id}": {
+      },
       "get": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_datasetio_iterrows__dataset_id__get",
+        "operationId": "endpoint_v1_agents_get",
         "parameters": [
-          {
-            "name": "dataset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Dataset Id"
-            }
-          },
           {
             "name": "start_index",
             "in": "query",
@@ -674,525 +79,6 @@
             }
           }
         ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/providers/{provider_id}": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_providers__provider_id__get",
-        "parameters": [
-          {
-            "name": "provider_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Provider Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/providers": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_providers_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/health": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_health_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/inspect/routes": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_inspect_routes_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/version": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_version_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/vector-io/insert": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_vector_io_insert_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_vector_io_insert_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/vector-io/query": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_vector_io_query_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_vector_io_query_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/eval/benchmarks/{benchmark_id}/evaluations": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__evaluations_post",
-        "parameters": [
-          {
-            "name": "benchmark_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "benchmark_id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_eval_benchmarks__benchmark_id__evaluations_post"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/eval/benchmarks/{benchmark_id}/jobs/{job_id}": {
-      "delete": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__jobs__job_id__delete",
-        "parameters": [
-          {
-            "name": "benchmark_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Benchmark Id"
-            }
-          },
-          {
-            "name": "job_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Job Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__jobs__job_id__get",
-        "parameters": [
-          {
-            "name": "benchmark_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Benchmark Id"
-            }
-          },
-          {
-            "name": "job_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Job Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/eval/benchmarks/{benchmark_id}/jobs/{job_id}/result": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__jobs__job_id__result_get",
-        "parameters": [
-          {
-            "name": "benchmark_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Benchmark Id"
-            }
-          },
-          {
-            "name": "job_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Job Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/eval/benchmarks/{benchmark_id}/jobs": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__jobs_post",
-        "parameters": [
-          {
-            "name": "benchmark_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "benchmark_id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_eval_benchmarks__benchmark_id__jobs_post"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/safety/run-shield": {
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_safety_run_shield_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_safety_run_shield_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/agents": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_agents_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_agents_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_agents_post"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1727,6 +613,38 @@
               "type": "string",
               "title": "Agent Id"
             }
+          },
+          {
+            "name": "start_index",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Index"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
           }
         ],
         "responses": {
@@ -1813,6 +731,208 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/health": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/inspect/routes": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_inspect_routes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/version": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_version_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models/{model_id}": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_models__model_id__get",
+        "parameters": [
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_models__model_id__delete",
+        "parameters": [
+          {
+            "name": "model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_models_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_models_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/openai/v1/models": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_openai_v1_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
                 }
               }
             }
@@ -1993,6 +1113,55 @@
         }
       }
     },
+    "/v1/telemetry/metrics/{metric_name}": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_telemetry_metrics__metric_name__post",
+        "parameters": [
+          {
+            "name": "metric_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "metric_name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_telemetry_metrics__metric_name__post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/telemetry/spans": {
       "post": {
         "summary": "Endpoint",
@@ -2106,55 +1275,18 @@
         }
       }
     },
-    "/v1/models/{model_id}": {
+    "/v1/shields/{identifier}": {
       "get": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_models__model_id__get",
+        "operationId": "endpoint_v1_shields__identifier__get",
         "parameters": [
           {
-            "name": "model_id",
+            "name": "identifier",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Model Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_models__model_id__delete",
-        "parameters": [
-          {
-            "name": "model_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Model Id"
+              "title": "Identifier"
             }
           }
         ],
@@ -2182,10 +1314,10 @@
         }
       }
     },
-    "/v1/models": {
+    "/v1/shields": {
       "get": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_models_get",
+        "operationId": "endpoint_v1_shields_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2201,12 +1333,12 @@
       },
       "post": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_models_post",
+        "operationId": "endpoint_v1_shields_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_models_post"
+                "$ref": "#/components/schemas/Body_endpoint_v1_shields_post"
               }
             }
           },
@@ -2236,10 +1368,20 @@
         }
       }
     },
-    "/v1/openai/v1/models": {
-      "get": {
+    "/v1/inference/batch-chat-completion": {
+      "post": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_openai_v1_models_get",
+        "operationId": "endpoint_v1_inference_batch_chat_completion_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_inference_batch_chat_completion_post"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2247,6 +1389,756 @@
               "application/json": {
                 "schema": {
 
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/inference/batch-completion": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_inference_batch_completion_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_inference_batch_completion_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/inference/chat-completion": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_inference_chat_completion_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_inference_chat_completion_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/inference/completion": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_inference_completion_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_inference_completion_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/inference/embeddings": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_inference_embeddings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_inference_embeddings_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/openai/v1/chat/completions": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_openai_v1_chat_completions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_openai_v1_chat_completions_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/openai/v1/completions": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_openai_v1_completions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_openai_v1_completions_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scoring/score": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_scoring_score_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_scoring_score_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scoring/score-batch": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_scoring_score_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_scoring_score_batch_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/datasetio/append-rows/{dataset_id}": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_datasetio_append_rows__dataset_id__post",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "dataset_id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_datasetio_append_rows__dataset_id__post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/datasetio/iterrows/{dataset_id}": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_datasetio_iterrows__dataset_id__get",
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dataset Id"
+            }
+          },
+          {
+            "name": "start_index",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Index"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/eval/benchmarks/{benchmark_id}/evaluations": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__evaluations_post",
+        "parameters": [
+          {
+            "name": "benchmark_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "benchmark_id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_eval_benchmarks__benchmark_id__evaluations_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/eval/benchmarks/{benchmark_id}/jobs/{job_id}": {
+      "delete": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__jobs__job_id__delete",
+        "parameters": [
+          {
+            "name": "benchmark_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Benchmark Id"
+            }
+          },
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "benchmark_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Benchmark Id"
+            }
+          },
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/eval/benchmarks/{benchmark_id}/jobs/{job_id}/result": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__jobs__job_id__result_get",
+        "parameters": [
+          {
+            "name": "benchmark_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Benchmark Id"
+            }
+          },
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/eval/benchmarks/{benchmark_id}/jobs": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__jobs_post",
+        "parameters": [
+          {
+            "name": "benchmark_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "benchmark_id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_eval_benchmarks__benchmark_id__jobs_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vector-io/insert": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_vector_io_insert_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_vector_io_insert_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vector-io/query": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_vector_io_query_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_vector_io_query_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2355,99 +2247,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/Body_endpoint_v1_datasets_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/eval/benchmarks/{benchmark_id}": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__get",
-        "parameters": [
-          {
-            "name": "benchmark_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Benchmark Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/eval/benchmarks": {
-      "get": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_eval_benchmarks_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Endpoint",
-        "operationId": "endpoint_v1_eval_benchmarks_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_eval_benchmarks_post"
               }
             }
           },
@@ -2692,6 +2491,193 @@
         }
       }
     },
+    "/v1/providers/{provider_id}": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_providers__provider_id__get",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/providers": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vector-dbs/{vector_db_id}": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_vector_dbs__vector_db_id__get",
+        "parameters": [
+          {
+            "name": "vector_db_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vector Db Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_vector_dbs__vector_db_id__delete",
+        "parameters": [
+          {
+            "name": "vector_db_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vector Db Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vector-dbs": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_vector_dbs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_vector_dbs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_vector_dbs_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/scoring-functions/{scoring_fn_id}": {
       "get": {
         "summary": "Endpoint",
@@ -2785,18 +2771,18 @@
         }
       }
     },
-    "/v1/shields/{identifier}": {
+    "/v1/eval/benchmarks/{benchmark_id}": {
       "get": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_shields__identifier__get",
+        "operationId": "endpoint_v1_eval_benchmarks__benchmark_id__get",
         "parameters": [
           {
-            "name": "identifier",
+            "name": "benchmark_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Identifier"
+              "title": "Benchmark Id"
             }
           }
         ],
@@ -2824,10 +2810,10 @@
         }
       }
     },
-    "/v1/shields": {
+    "/v1/eval/benchmarks": {
       "get": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_shields_get",
+        "operationId": "endpoint_v1_eval_benchmarks_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2843,12 +2829,12 @@
       },
       "post": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_shields_post",
+        "operationId": "endpoint_v1_eval_benchmarks_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_shields_post"
+                "$ref": "#/components/schemas/Body_endpoint_v1_eval_benchmarks_post"
               }
             }
           },
@@ -2878,15 +2864,15 @@
         }
       }
     },
-    "/v1/scoring/score": {
+    "/v1/safety/run-shield": {
       "post": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_scoring_score_post",
+        "operationId": "endpoint_v1_safety_run_shield_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_scoring_score_post"
+                "$ref": "#/components/schemas/Body_endpoint_v1_safety_run_shield_post"
               }
             }
           },
@@ -2916,15 +2902,154 @@
         }
       }
     },
-    "/v1/scoring/score-batch": {
+    "/v1/tool-runtime/invoke": {
       "post": {
         "summary": "Endpoint",
-        "operationId": "endpoint_v1_scoring_score_batch_post",
+        "operationId": "endpoint_v1_tool_runtime_invoke_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_endpoint_v1_scoring_score_batch_post"
+                "$ref": "#/components/schemas/Body_endpoint_v1_tool_runtime_invoke_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tool-runtime/list-tools": {
+      "get": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_tool_runtime_list_tools_get",
+        "parameters": [
+          {
+            "name": "tool_group_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tool Group Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/URL"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Mcp Endpoint"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tool-runtime/rag-tool/insert": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_tool_runtime_rag_tool_insert_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_tool_runtime_rag_tool_insert_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tool-runtime/rag-tool/query": {
+      "post": {
+        "summary": "Endpoint",
+        "operationId": "endpoint_v1_tool_runtime_rag_tool_query_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_endpoint_v1_tool_runtime_rag_tool_query_post"
               }
             }
           },
@@ -3167,6 +3292,7 @@
             "title": "Name"
           },
           "args": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Args"
           }
@@ -3222,17 +3348,10 @@
             "default": "basic"
           },
           "aggregation_functions": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/AggregationFunctionType"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "items": {
+              "$ref": "#/components/schemas/AggregationFunctionType"
+            },
+            "type": "array",
             "title": "Aggregation Functions",
             "description": "Aggregation functions to apply to the scores of each row"
           }
@@ -3443,6 +3562,7 @@
         "properties": {
           "rows": {
             "items": {
+              "additionalProperties": true,
               "type": "object"
             },
             "type": "array",
@@ -3474,6 +3594,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -3505,6 +3626,7 @@
         "properties": {
           "input_rows": {
             "items": {
+              "additionalProperties": true,
               "type": "object"
             },
             "type": "array",
@@ -3561,6 +3683,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -4190,6 +4313,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -4272,6 +4396,7 @@
                 "type": "string"
               },
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -4284,6 +4409,7 @@
             "anyOf": [
               {
                 "items": {
+                  "additionalProperties": true,
                   "type": "object"
                 },
                 "type": "array"
@@ -4445,6 +4571,7 @@
           "stream_options": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -4470,6 +4597,7 @@
                 "type": "string"
               },
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -4482,6 +4610,7 @@
             "anyOf": [
               {
                 "items": {
+                  "additionalProperties": true,
                   "type": "object"
                 },
                 "type": "array"
@@ -4701,6 +4830,7 @@
           "stream_options": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -4784,7 +4914,20 @@
               },
               {
                 "items": {
-                  "$ref": "#/components/schemas/OpenAIResponseInputMessage"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/OpenAIResponseOutputMessageWebSearchToolCall"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpenAIResponseOutputMessageFunctionToolCall"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpenAIResponseInputFunctionToolCallOutput"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpenAIResponseMessage"
+                    }
+                  ]
                 },
                 "type": "array"
               }
@@ -4830,6 +4973,17 @@
             "title": "Stream",
             "default": false
           },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
           "tools": {
             "anyOf": [
               {
@@ -4837,11 +4991,19 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/OpenAIResponseInputToolWebSearch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpenAIResponseInputToolFileSearch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpenAIResponseInputToolFunction"
                     }
                   ],
                   "discriminator": {
                     "propertyName": "type",
                     "mapping": {
+                      "file_search": "#/components/schemas/OpenAIResponseInputToolFileSearch",
+                      "function": "#/components/schemas/OpenAIResponseInputToolFunction",
                       "web_search": "#/components/schemas/OpenAIResponseInputToolWebSearch",
                       "web_search_preview_2025_03_11": "#/components/schemas/OpenAIResponseInputToolWebSearch"
                     }
@@ -4899,6 +5061,7 @@
             "title": "Messages"
           },
           "params": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Params"
           }
@@ -5069,6 +5232,7 @@
         "properties": {
           "input_rows": {
             "items": {
+              "additionalProperties": true,
               "type": "object"
             },
             "type": "array",
@@ -5144,6 +5308,7 @@
           "params": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -5186,6 +5351,60 @@
           "event"
         ],
         "title": "Body_endpoint_v1_telemetry_events_post"
+      },
+      "Body_endpoint_v1_telemetry_metrics__metric_name__post": {
+        "properties": {
+          "start_time": {
+            "type": "integer",
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "granularity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Granularity",
+            "default": "1d"
+          },
+          "query_type": {
+            "$ref": "#/components/schemas/MetricQueryType",
+            "default": "range"
+          },
+          "label_matchers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MetricLabelMatcher"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Matchers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start_time"
+        ],
+        "title": "Body_endpoint_v1_telemetry_metrics__metric_name__post"
       },
       "Body_endpoint_v1_telemetry_spans__span_id__tree_post": {
         "properties": {
@@ -5358,6 +5577,7 @@
             "title": "Tool Name"
           },
           "kwargs": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Kwargs"
           }
@@ -5490,6 +5710,7 @@
           "args": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -5644,6 +5865,7 @@
           "params": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -5742,6 +5964,7 @@
             "title": "Content"
           },
           "metadata": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Metadata"
           }
@@ -5942,6 +6165,37 @@
         "title": "EmbeddingTaskType",
         "description": "How is the embedding being used? This is only supported by asymmetric embedding models.\n\n:cvar query: Used for a query for semantic search.\n:cvar document: Used at indexing time when ingesting documents."
       },
+      "FileSearchRankingOptions": {
+        "properties": {
+          "ranker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ranker"
+          },
+          "score_threshold": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Threshold",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "FileSearchRankingOptions"
+      },
       "GrammarResponseFormat": {
         "properties": {
           "type": {
@@ -5951,6 +6205,7 @@
             "default": "grammar"
           },
           "bnf": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Bnf"
           }
@@ -6015,6 +6270,7 @@
             "default": "json_schema"
           },
           "json_schema": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Json Schema"
           }
@@ -6062,32 +6318,18 @@
             "title": "Prompt Template"
           },
           "judge_score_regexes": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
             "title": "Judge Score Regexes",
             "description": "Regexes to extract the answer from generated response"
           },
           "aggregation_functions": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/AggregationFunctionType"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "items": {
+              "$ref": "#/components/schemas/AggregationFunctionType"
+            },
+            "type": "array",
             "title": "Aggregation Functions",
             "description": "Aggregation functions to apply to the scores of each row"
           }
@@ -6234,6 +6476,46 @@
           "unit"
         ],
         "title": "MetricEvent"
+      },
+      "MetricLabelMatcher": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/MetricLabelOperator",
+            "default": "="
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "MetricLabelMatcher"
+      },
+      "MetricLabelOperator": {
+        "type": "string",
+        "enum": [
+          "=",
+          "!=",
+          "=~",
+          "!~"
+        ],
+        "title": "MetricLabelOperator"
+      },
+      "MetricQueryType": {
+        "type": "string",
+        "enum": [
+          "range",
+          "instant"
+        ],
+        "title": "MetricQueryType"
       },
       "ModelCandidate": {
         "properties": {
@@ -6589,6 +6871,7 @@
           "schema": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -6643,77 +6926,52 @@
         "type": "object",
         "title": "OpenAIResponseFormatText"
       },
-      "OpenAIResponseInputMessage": {
+      "OpenAIResponseInputFunctionToolCallOutput": {
         "properties": {
-          "content": {
+          "call_id": {
+            "type": "string",
+            "title": "Call Id"
+          },
+          "output": {
+            "type": "string",
+            "title": "Output"
+          },
+          "type": {
+            "type": "string",
+            "const": "function_call_output",
+            "title": "Type",
+            "default": "function_call_output"
+          },
+          "id": {
             "anyOf": [
               {
                 "type": "string"
               },
               {
-                "items": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/OpenAIResponseInputMessageContentText"
-                    },
-                    {
-                      "$ref": "#/components/schemas/OpenAIResponseInputMessageContentImage"
-                    }
-                  ],
-                  "discriminator": {
-                    "propertyName": "type",
-                    "mapping": {
-                      "input_image": "#/components/schemas/OpenAIResponseInputMessageContentImage",
-                      "input_text": "#/components/schemas/OpenAIResponseInputMessageContentText"
-                    }
-                  }
-                },
-                "type": "array"
+                "type": "null"
               }
             ],
-            "title": "Content"
+            "title": "Id"
           },
-          "role": {
+          "status": {
             "anyOf": [
               {
-                "type": "string",
-                "const": "system"
-              },
-              {
-                "type": "string",
-                "const": "developer"
-              },
-              {
-                "type": "string",
-                "const": "user"
-              },
-              {
-                "type": "string",
-                "const": "assistant"
-              }
-            ],
-            "title": "Role"
-          },
-          "type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "const": "message"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Type",
-            "default": "message"
+            "title": "Status"
           }
         },
         "type": "object",
         "required": [
-          "content",
-          "role"
+          "call_id",
+          "output"
         ],
-        "title": "OpenAIResponseInputMessage"
+        "title": "OpenAIResponseInputFunctionToolCallOutput",
+        "description": "This represents the output of a function call that gets passed back to the model."
       },
       "OpenAIResponseInputMessageContentImage": {
         "properties": {
@@ -6775,6 +7033,92 @@
         ],
         "title": "OpenAIResponseInputMessageContentText"
       },
+      "OpenAIResponseInputToolFileSearch": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "file_search",
+            "title": "Type",
+            "default": "file_search"
+          },
+          "vector_store_id": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Vector Store Id"
+          },
+          "ranking_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileSearchRankingOptions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "vector_store_id"
+        ],
+        "title": "OpenAIResponseInputToolFileSearch"
+      },
+      "OpenAIResponseInputToolFunction": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "function",
+            "title": "Type",
+            "default": "function"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          },
+          "strict": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strict"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "parameters"
+        ],
+        "title": "OpenAIResponseInputToolFunction"
+      },
       "OpenAIResponseInputToolWebSearch": {
         "properties": {
           "type": {
@@ -6807,6 +7151,192 @@
         },
         "type": "object",
         "title": "OpenAIResponseInputToolWebSearch"
+      },
+      "OpenAIResponseMessage": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OpenAIResponseInputMessageContentText"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpenAIResponseInputMessageContentImage"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "input_image": "#/components/schemas/OpenAIResponseInputMessageContentImage",
+                      "input_text": "#/components/schemas/OpenAIResponseInputMessageContentText"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OpenAIResponseOutputMessageContentOutputText"
+                    }
+                  ],
+                  "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                      "output_text": "#/components/schemas/OpenAIResponseOutputMessageContentOutputText"
+                    }
+                  }
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Content"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "system"
+              },
+              {
+                "type": "string",
+                "const": "developer"
+              },
+              {
+                "type": "string",
+                "const": "user"
+              },
+              {
+                "type": "string",
+                "const": "assistant"
+              }
+            ],
+            "title": "Role"
+          },
+          "type": {
+            "type": "string",
+            "const": "message",
+            "title": "Type",
+            "default": "message"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content",
+          "role"
+        ],
+        "title": "OpenAIResponseMessage",
+        "description": "Corresponds to the various Message types in the Responses API.\nThey are all under one type because the Responses API gives them all\nthe same \"type\" value, and there is no way to tell them apart in certain\nscenarios."
+      },
+      "OpenAIResponseOutputMessageContentOutputText": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "type": {
+            "type": "string",
+            "const": "output_text",
+            "title": "Type",
+            "default": "output_text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "OpenAIResponseOutputMessageContentOutputText"
+      },
+      "OpenAIResponseOutputMessageFunctionToolCall": {
+        "properties": {
+          "arguments": {
+            "type": "string",
+            "title": "Arguments"
+          },
+          "call_id": {
+            "type": "string",
+            "title": "Call Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "const": "function_call",
+            "title": "Type",
+            "default": "function_call"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "arguments",
+          "call_id",
+          "name",
+          "id",
+          "status"
+        ],
+        "title": "OpenAIResponseOutputMessageFunctionToolCall"
+      },
+      "OpenAIResponseOutputMessageWebSearchToolCall": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "type": {
+            "type": "string",
+            "const": "web_search_call",
+            "title": "Type",
+            "default": "web_search_call"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "OpenAIResponseOutputMessageWebSearchToolCall"
       },
       "OpenAISystemMessageParam": {
         "properties": {
@@ -7064,6 +7594,7 @@
             "title": "Mime Type"
           },
           "metadata": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Metadata"
           }
@@ -7109,10 +7640,16 @@
             "type": "integer",
             "title": "Max Chunks",
             "default": 5
+          },
+          "chunk_template": {
+            "type": "string",
+            "title": "Chunk Template",
+            "default": "Result {index}\nContent: {chunk.content}\nMetadata: {metadata}\n"
           }
         },
         "type": "object",
-        "title": "RAGQueryConfig"
+        "title": "RAGQueryConfig",
+        "description": "Configuration for the RAG query generation.\n\n:param query_generator_config: Configuration for the query generator.\n:param max_tokens_in_context: Maximum number of tokens in the context.\n:param max_chunks: Maximum number of chunks to retrieve.\n:param chunk_template: Template for formatting each retrieved chunk in the context.\n    Available placeholders: {index} (1-based chunk ordinal), {chunk.content} (chunk content string), {metadata} (chunk metadata dict).\n    Default: \"Result {index}\\nContent: {chunk.content}\\nMetadata: {metadata}\\n\""
       },
       "RegexParserScoringFnParams": {
         "properties": {
@@ -7123,32 +7660,18 @@
             "default": "regex_parser"
           },
           "parsing_regexes": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
             "title": "Parsing Regexes",
             "description": "Regex to extract the answer from generated response"
           },
           "aggregation_functions": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/AggregationFunctionType"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "items": {
+              "$ref": "#/components/schemas/AggregationFunctionType"
+            },
+            "type": "array",
             "title": "Aggregation Functions",
             "description": "Aggregation functions to apply to the scores of each row"
           }
@@ -7166,6 +7689,7 @@
           },
           "rows": {
             "items": {
+              "additionalProperties": true,
               "type": "object"
             },
             "type": "array",
@@ -7700,6 +8224,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -7921,6 +8446,7 @@
           "metadata": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {

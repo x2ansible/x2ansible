@@ -1,9 +1,9 @@
-active_profile: local
+active_profile: openshift
 
 defaults:
   llama_stack:
-    base_url: "http://llamastack:8321"
-    model: "llama3.2:3b"
+    base_url: "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com"
+    model: "meta-llama/Llama-3.1-8B-Instruct"
   cors:
     allow_origins:
       - "http://localhost:3000"
@@ -40,16 +40,16 @@ profiles:
 
   openshift:
     llama_stack:
-      base_url: "http://llamastack:8321"
+      base_url: "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com"
     cors:
       allow_origins:
-        - "https://x2ansible-ui.openshift.apps.example.com"
+        - "http://localhost:3000"
     logging:
       level: INFO
 
   staging:
     llama_stack:
-      base_url: "http://llamastack-staging:8321"
+      base_url: "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com"
     cors:
       allow_origins:
         - "https://x2ansible-staging.apps.example.com"

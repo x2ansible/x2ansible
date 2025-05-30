@@ -1,0 +1,103 @@
+{
+  "List all agents": {
+    "status_code": 200,
+    "success": true,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/agents",
+    "method": "GET",
+    "response_preview": "{'data': [{'agent_id': '03a70585-74e5-4bf1-a0b4-e08e12660cce', 'agent_config': {'sampling_params': {'strategy': {'type': 'greedy'}, 'max_tokens': 0, 'repetition_penalty': 1.0, 'stop': None}, 'input_sh..."
+  },
+  "Get specific agent info": {
+    "status_code": 200,
+    "success": true,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/agents/04042f73-9b43-4a3c-a4bb-3a2c7aecd0eb",
+    "method": "GET",
+    "response_preview": "{'agent_id': '04042f73-9b43-4a3c-a4bb-3a2c7aecd0eb', 'agent_config': {'sampling_params': {'strategy': {'type': 'greedy'}, 'max_tokens': 4096, 'repetition_penalty': 1.0, 'stop': None}, 'input_shields':..."
+  },
+  "List vector databases": {
+    "status_code": 200,
+    "success": true,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/vector-dbs",
+    "method": "GET",
+    "response_preview": "{'data': [{'identifier': 'citi_ansible', 'provider_resource_id': 'citi_ansible', 'provider_id': 'pgvector', 'type': 'vector_db', 'embedding_model': 'all-MiniLM-L6-v2', 'embedding_dimension': 384}, {'i..."
+  },
+  "Get vector DB info": {
+    "status_code": 200,
+    "success": true,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/vector-dbs/iac",
+    "method": "GET",
+    "response_preview": {
+      "identifier": "iac",
+      "provider_resource_id": "iac",
+      "provider_id": "faiss",
+      "type": "vector_db",
+      "access_attributes": null,
+      "embedding_model": "all-MiniLM-L6-v2",
+      "embedding_dimension": 384
+    }
+  },
+  "Chat completion inference": {
+    "status_code": 404,
+    "success": false,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/inference/chat_completion",
+    "method": "POST",
+    "error_detail": "{\"detail\":\"Not Found\"}"
+  },
+  "Direct completion inference": {
+    "status_code": 400,
+    "success": false,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/inference/completion",
+    "method": "POST",
+    "error_detail": "{\"error\":{\"detail\":{\"errors\":[{\"loc\":[\"body\",\"model_id\"],\"msg\":\"Field required\",\"type\":\"missing\"}]}}}"
+  },
+  "Agent completion": {
+    "status_code": 404,
+    "success": false,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/agents/04042f73-9b43-4a3c-a4bb-3a2c7aecd0eb/complete",
+    "method": "POST",
+    "error_detail": "{\"detail\":\"Not Found\"}"
+  },
+  "Agent inference": {
+    "status_code": 404,
+    "success": false,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/agents/04042f73-9b43-4a3c-a4bb-3a2c7aecd0eb/inference",
+    "method": "POST",
+    "error_detail": "{\"detail\":\"Not Found\"}"
+  },
+  "Create session": {
+    "status_code": 200,
+    "success": true,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/agents/04042f73-9b43-4a3c-a4bb-3a2c7aecd0eb/session",
+    "method": "POST",
+    "response_preview": {
+      "session_id": "a61a43b7-7664-4285-9b25-de7f312b419c"
+    }
+  },
+  "Vector DB search": {
+    "status_code": 405,
+    "success": false,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/vector-dbs/iac/search",
+    "method": "POST",
+    "error_detail": "{\"detail\":\"Method Not Allowed\"}"
+  },
+  "Vector DB query": {
+    "status_code": 405,
+    "success": false,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/vector-dbs/iac/query",
+    "method": "POST",
+    "error_detail": "{\"detail\":\"Method Not Allowed\"}"
+  },
+  "RAG query": {
+    "status_code": 404,
+    "success": false,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/rag/query",
+    "method": "POST",
+    "error_detail": "{\"detail\":\"Not Found\"}"
+  },
+  "RAG agent query": {
+    "status_code": 404,
+    "success": false,
+    "url": "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com/v1/rag/04042f73-9b43-4a3c-a4bb-3a2c7aecd0eb/query",
+    "method": "POST",
+    "error_detail": "{\"detail\":\"Not Found\"}"
+  }
+}
