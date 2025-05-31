@@ -1,3 +1,8 @@
+# routes/classify.py
+"""
+MINIMAL FIXED classify route - just fixes the missing function
+"""
+
 import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel

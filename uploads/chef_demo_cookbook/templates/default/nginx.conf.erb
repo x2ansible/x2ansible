@@ -1,0 +1,13 @@
+user www-data;
+worker_processes <%= node['nginx']['worker_processes'] %>;
+events {
+  worker_connections <%= node['nginx']['worker_connections'] %>;
+}
+http {
+  server {
+    listen 80;
+    location / {
+      return 200 'Hello from Chef!';
+    }
+  }
+}

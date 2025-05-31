@@ -191,20 +191,75 @@ export default function RunWorkflowPage() {
     setLoading
   });
 
-  const { classifyCode, handleManualClassify } = useClassification({
-    BACKEND_URL, 
-    code, 
+  // FIXED: Multi-file classification handler with proper debugging
+  const handleManualClassify = (files?: { path: string; content: string }[]) => {
+    if (loading) {
+      addLogMessage("⚠️ Classification already in progress");
+      return;
+    }
+
+    // Handle multi-file classification
+    if (files && files.length > 0) {
+      console.log("🔍 Multi-file classification starting with", files.length, "files");
+      console.log("🔍 Files received:", files.map(f => f.path));
+      addLogMessage(`🔍 Starting multi-file analysis for ${files.length} files`);
+      
+      // Create combined content with better formatting
+      const fileList = files.map(f => f.path).join(", ");
+      const combinedContent = `# Combined Analysis of ${files.length} files: ${fileList}
+
+${files
+  .map(file => `
+# ========================================
+# File: ${file.path}
+# ========================================
+${file.content}`)
+  .join('\n\n')}`;
+      
+      console.log("🔍 Combined content length:", combinedContent.length);
+      console.log("🔍 Combined content preview:", combinedContent.substring(0, 300) + "...");
+      console.log("🔍 File list:", fileList);
+      
+      // Update code state
+      setCode(combinedContent);
+      addLogMessage(`📄 Combined ${files.length} files: ${fileList}`);
+      addLogMessage(`📊 Total content: ${combinedContent.length} characters`);
+      
+      // Run classification on combined content with delay to ensure state update
+      setTimeout(() => {
+        console.log("🔍 About to call classifyCode with length:", combinedContent.length);
+        console.log("🔍 Content starts with:", combinedContent.substring(0, 100));
+        classifyCode(combinedContent);
+      }, 200);
+      
+      return;
+    }
+
+    // Handle single-file classification
+    if (!code.trim()) {
+      addLogMessage("⚠️ No code loaded. Please select or upload a file first");
+      return;
+    }
+    
+    console.log("🔍 Single file classification with length:", code.length);
+    classifyCode(code);
+  };
+
+  const { classifyCode } = useClassification({
+    BACKEND_URL,
+    code,
     setClassificationResult: (result) => {
       console.log("🔍 DEBUG - Classification result received:", result);
       setClassificationResult(result);
       if (result && !result.error) {
         markStepAsCompleted(0);
+        addLogMessage("✅ Analysis completed - ready for next step");
       }
-    }, 
-    setStep, 
-    step, 
-    setLoading, 
-    loading, 
+    },
+    setStep,
+    step,
+    setLoading,
+    loading,
     addLog: addLogMessage
   });
 
@@ -268,7 +323,7 @@ export default function RunWorkflowPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🚀 Convert to Ansible - Step by Step</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Convert to Ansible - Step by Step</h1>
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -378,18 +433,15 @@ export default function RunWorkflowPage() {
               fetchGitFileContent={fetchGitFileContent}
               handleManualClassify={handleManualClassify}
               code={code}
+              setCode={setCode}
               contextConfig={contextConfig}
               setContextConfig={setContextConfig}
-              handleContextAnalysis={handleContextAnalysis}
               conversionConfig={conversionConfig}
               setConversionConfig={setConversionConfig}
-              handleConversion={handleConversion}
               validationConfig={validationConfig}
               setValidationConfig={setValidationConfig}
-              handleValidation={handleValidation}
               deploymentConfig={deploymentConfig}
               setDeploymentConfig={setDeploymentConfig}
-              handleDeployment={handleDeployment}
             />
           )}
         </div>

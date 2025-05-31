@@ -1,13 +1,13 @@
-// src/components/WorkflowSidebar.tsx
 "use client";
 
-import { ChangeEvent, FormEvent } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import FileTreeSelector, { TreeNode } from "./FileTreeSelector";
+import SelectedFilesPanel from "./SelectedFilesPanel";
 import SourceSelector from "./SourceSelector";
 
 interface WorkflowSidebarProps {
   currentStep: number;
-  
-  // Step 0 (Classify) - Source Selection Props
   sourceType: "upload" | "existing" | "git";
   setSourceType: (type: "upload" | "existing" | "git") => void;
   loading: boolean;
@@ -31,10 +31,9 @@ interface WorkflowSidebarProps {
   selectedGitFile: string;
   fetchGitFiles: (repo: string, folder: string) => void;
   fetchGitFileContent: (repo: string, folder: string, file: string) => void;
-  handleManualClassify: () => void;
+  handleManualClassify: (files?: { path: string; content: string }[]) => void;
   code: string;
-  
-  // Step-specific configs
+  setCode?: (code: string) => void;
   contextConfig?: any;
   setContextConfig?: (config: any) => void;
   conversionConfig?: any;
@@ -45,62 +44,268 @@ interface WorkflowSidebarProps {
   setDeploymentConfig?: (config: any) => void;
 }
 
+// Clean fetchTree function
+async function fetchTree(path: string = ""): Promise<TreeNode[]> {
+  try {
+    const baseUrl = process.env.NODE_ENV === "development" 
+      ? "http://localhost:8000" 
+      : "";
+    
+    const url = path
+      ? `${baseUrl}/api/files/tree?path=${encodeURIComponent(path)}`
+      : `${baseUrl}/api/files/tree`;
+    
+    const res = await fetch(url);
+    
+    if (!res.ok) {
+      console.error(`File tree fetch failed: ${res.status} ${res.statusText}`);
+      return [];
+    }
+    
+    const data = await res.json();
+    return data.items || [];
+  } catch (e) {
+    console.error("File tree fetch exception:", e);
+    return [];
+  }
+}
+
 export default function WorkflowSidebar(props: WorkflowSidebarProps) {
   const { currentStep } = props;
 
-  // FIXED: Consistent wrapper with fixed width and scrollbar
+  // Multi-file explorer state
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  // Handle multi-file analyze
+  async function handleAnalyzeFiles(selectedFiles: string[]) {
+    if (selectedFiles.length === 0) {
+      alert("Please select at least one file first!");
+      return;
+    }
+    
+    setAnalyzing(true);
+    
+    try {
+      const baseUrl = process.env.NODE_ENV === "development" 
+        ? "http://localhost:8000" 
+        : "";
+      
+      const response = await fetch(`${baseUrl}/api/files/get_many`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(selectedFiles),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch files: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.files && Array.isArray(data.files) && data.files.length > 0) {
+        console.log("Successfully fetched files:", data.files.length);
+        
+        // Create combined content with better file separation and listing
+        const fileList = data.files.map(f => f.path).join(", ");
+        const combinedContent = `# Combined Analysis of ${data.files.length} files: ${fileList}
+
+${data.files
+  .map(file => `
+# ========================================
+# File: ${file.path}
+# ========================================
+${file.content}`)
+  .join('\n\n')}`;
+
+        // CRITICAL: Update the code state first
+        if (props.setCode) {
+          props.setCode(combinedContent);
+          console.log("Updated code prop with combined content for files:", fileList);
+        }
+
+        // Then call the classification handler
+        props.handleManualClassify(data.files);
+        
+        console.log("Analysis completed successfully for:", fileList);
+      } else {
+        throw new Error("No files received from server or invalid format");
+      }
+      
+    } catch (error) {
+      console.error("Analysis failed:", error);
+      alert(`Analysis failed: ${error.message}`);
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  // Wrapper for steps 1-4
   const SidebarWrapper = ({ children, title }: { children: React.ReactNode; title: string }) => (
     <div className="w-80 bg-gray-900 dark:bg-gray-950 text-white rounded-lg border border-gray-700 dark:border-gray-600 flex flex-col h-[75vh]">
-      {/* Fixed Header */}
       <div className="px-4 py-3 border-b border-gray-700 bg-gray-800 rounded-t-lg flex-shrink-0">
         <h3 className="font-semibold text-sm text-gray-200">{title}</h3>
       </div>
-      
-      {/* Scrollable Content */}
       <div className="flex-1 overflow-auto rh-scrollbar">
-        <div className="p-4">
-          {children}
-        </div>
+        <div className="p-4">{children}</div>
       </div>
     </div>
   );
 
-  // Step 0: Source Selection (existing SourceSelector but wrapped)
+  // Step 0: Source Selection
   if (currentStep === 0) {
     return (
       <div className="w-80">
-        <SourceSelector
-          sourceType={props.sourceType}
-          setSourceType={props.setSourceType}
-          loading={props.loading}
-          uploadKey={props.uploadKey}
-          handleUpload={props.handleUpload}
-          folderList={props.folderList}
-          selectedFolder={props.selectedFolder}
-          setSelectedFolder={props.setSelectedFolder}
-          selectedFile={props.selectedFile}
-          fileList={props.fileList}
-          fetchFilesInFolder={props.fetchFilesInFolder}
-          fetchFileContent={props.fetchFileContent}
-          gitUrl={props.gitUrl}
-          setGitUrl={props.setGitUrl}
-          handleCloneRepo={props.handleCloneRepo}
-          gitRepoName={props.gitRepoName}
-          gitFolderList={props.gitFolderList}
-          selectedGitFolder={props.selectedGitFolder}
-          setSelectedGitFolder={props.setSelectedGitFolder}
-          gitFileList={props.gitFileList}
-          selectedGitFile={props.selectedGitFile}
-          fetchGitFiles={props.fetchGitFiles}
-          fetchGitFileContent={props.fetchGitFileContent}
-          handleManualClassify={props.handleManualClassify}
-          code={props.code}
-        />
+        {/* Source Type Buttons */}
+        <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700 p-3 flex gap-2">
+          {[
+            { key: "upload", label: "Upload File", icon: "📁" },
+            { key: "existing", label: "Select Existing", icon: "📂" },
+            { key: "git", label: "Clone from Git", icon: "🔗" },
+          ].map(({ key, label, icon }) => (
+            <button
+              key={key}
+              disabled={props.loading}
+              className={`px-3 py-2 text-sm rounded-lg font-medium border transition-colors disabled:opacity-50 text-left flex items-center gap-2 ${
+                props.sourceType === key
+                  ? "bg-blue-600/90 text-white border-blue-500 shadow"
+                  : "bg-slate-800/70 text-slate-300 hover:bg-slate-700 border-slate-700"
+              }`}
+              onClick={() => props.setSourceType(key as "upload" | "existing" | "git")}
+            >
+              <span>{icon}</span> {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Upload Option */}
+        {props.sourceType === "upload" && (
+          <div className="p-4">
+            <label className="block bg-blue-600 hover:bg-blue-700 text-white text-sm text-center py-2 rounded cursor-pointer transition-colors mt-2 shadow-md">
+              Upload File
+              <input
+                key={props.uploadKey}
+                type="file"
+                onChange={props.handleUpload}
+                className="hidden"
+                disabled={props.loading}
+                accept="*/*"
+              />
+            </label>
+            
+            {/* Analyze Button for uploaded file */}
+            {props.code && (
+              <button
+                onClick={() => props.handleManualClassify()}
+                disabled={props.loading || !props.code.trim()}
+                className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 rounded-full font-semibold text-base bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow"
+              >
+                {props.loading ? (
+                  <>
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <span>Analyzing...</span>
+                  </>
+                ) : (
+                  <>
+                    <MagnifyingGlassIcon className="w-5 h-5" />
+                    <span>Analyze Uploaded File</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Existing Files Option */}
+        {props.sourceType === "existing" && (
+          <div className="p-4">
+            <FileTreeSelector
+              fetchTree={fetchTree}
+              selectedFiles={selectedFiles}
+              setSelectedFiles={setSelectedFiles}
+            />
+            {/* Analyze Selected Files Button */}
+            <button
+              onClick={() => handleAnalyzeFiles(selectedFiles)}
+              disabled={selectedFiles.length === 0 || analyzing}
+              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 rounded-full font-semibold text-base bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow"
+            >
+              {analyzing ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  <span>Analyzing...</span>
+                </>
+              ) : (
+                <>
+                  <MagnifyingGlassIcon className="w-5 h-5" />
+                  <span>Analyze {selectedFiles.length} Files</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Git Option */}
+        {props.sourceType === "git" && (
+          <div className="p-4">
+            <form onSubmit={props.handleCloneRepo} className="space-y-2 mb-3">
+              <input
+                type="url"
+                value={props.gitUrl}
+                onChange={(e) => props.setGitUrl(e.target.value)}
+                placeholder="https://github.com/user/repo.git"
+                className="w-full p-2 border border-slate-700 rounded-lg text-sm bg-slate-800 text-slate-200 disabled:opacity-50"
+                disabled={props.loading}
+              />
+              <button
+                disabled={props.loading || !props.gitUrl.trim()}
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm transition-colors disabled:opacity-50 shadow-md"
+              >
+                {props.loading ? "⏳ Cloning..." : "🔗 Clone Repository"}
+              </button>
+            </form>
+            {props.gitRepoName && (
+              <>
+                <select
+                  disabled={props.loading}
+                  className="w-full p-2 rounded-lg border border-slate-700 text-sm bg-slate-800 text-slate-200 disabled:opacity-50 mb-2"
+                  value={props.selectedGitFolder}
+                  onChange={(e) => {
+                    props.setSelectedGitFolder(e.target.value);
+                    if (e.target.value) props.fetchGitFiles(props.gitRepoName, e.target.value);
+                  }}
+                >
+                  <option value="">-- Select Folder --</option>
+                  {props.gitFolderList.map((f, i) => (
+                    <option key={i} value={f}>📁 {f}</option>
+                  ))}
+                </select>
+                {props.selectedGitFolder && (
+                  <select
+                    disabled={props.loading}
+                    className="w-full p-2 rounded-lg border border-slate-700 text-sm bg-slate-800 text-slate-200 disabled:opacity-50"
+                    value={props.selectedGitFile}
+                    onChange={(e) => {
+                      if (e.target.value)
+                        props.fetchGitFileContent(props.gitRepoName, props.selectedGitFolder, e.target.value);
+                    }}
+                  >
+                    <option value="">-- Select File --</option>
+                    {props.gitFileList.map((f, i) => (
+                      <option key={i} value={f}>📄 {f}</option>
+                    ))}
+                  </select>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     );
   }
 
-  // Step 1: Context Analysis Configuration
+  // Step 1: Context Configuration
   if (currentStep === 1) {
     return (
       <SidebarWrapper title="📋 Context Configuration">
@@ -119,7 +324,6 @@ export default function WorkflowSidebar(props: WorkflowSidebarProps) {
               Include code comments
             </label>
           </div>
-          
           <div>
             <label className="flex items-center gap-2 text-sm text-gray-300">
               <input 
@@ -134,7 +338,6 @@ export default function WorkflowSidebar(props: WorkflowSidebarProps) {
               Analyze dependencies
             </label>
           </div>
-          
           <div>
             <label className="block text-sm text-gray-300 mb-2">Environment Type</label>
             <select 
@@ -150,7 +353,6 @@ export default function WorkflowSidebar(props: WorkflowSidebarProps) {
               <option value="production">Production</option>
             </select>
           </div>
-          
           <div>
             <label className="block text-sm text-gray-300 mb-2">Scan Depth</label>
             <select 
@@ -166,7 +368,6 @@ export default function WorkflowSidebar(props: WorkflowSidebarProps) {
               <option value="deep">Deep (Thorough)</option>
             </select>
           </div>
-
           <div className="pt-2">
             <div className="p-3 bg-gray-800 rounded text-xs border border-gray-700">
               <div className="text-gray-300">🎯 Context analysis examines code structure, dependencies, and environment requirements for optimal conversion.</div>
@@ -177,85 +378,32 @@ export default function WorkflowSidebar(props: WorkflowSidebarProps) {
     );
   }
 
-  // Step 2: Conversion Configuration
+  // Step 2: Conversion Options
   if (currentStep === 2) {
     return (
       <SidebarWrapper title="⚙️ Conversion Options">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Target Format</label>
+            <label className="block text-sm text-gray-300 mb-2">Target Framework</label>
             <select 
-              value={props.conversionConfig?.targetFormat || 'ansible'}
+              value={props.conversionConfig?.targetFramework || 'ansible'}
               onChange={(e) => props.setConversionConfig?.({
                 ...props.conversionConfig,
-                targetFormat: e.target.value
+                targetFramework: e.target.value
               })}
               className="w-full p-2 rounded border border-gray-600 text-sm bg-gray-800 text-gray-200 focus:border-red-500 focus:ring-1 focus:ring-red-500"
             >
-              <option value="ansible">Ansible Playbook</option>
+              <option value="ansible">Ansible</option>
               <option value="terraform">Terraform</option>
-              <option value="docker">Docker Compose</option>
-              <option value="kubernetes">Kubernetes YAML</option>
+              <option value="kubernetes">Kubernetes</option>
             </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Output Style</label>
-            <select 
-              value={props.conversionConfig?.outputStyle || 'detailed'}
-              onChange={(e) => props.setConversionConfig?.({
-                ...props.conversionConfig,
-                outputStyle: e.target.value
-              })}
-              className="w-full p-2 rounded border border-gray-600 text-sm bg-gray-800 text-gray-200 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-            >
-              <option value="minimal">Minimal</option>
-              <option value="detailed">Detailed (Recommended)</option>
-              <option value="enterprise">Enterprise Grade</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input 
-                type="checkbox" 
-                checked={props.conversionConfig?.includeComments || true}
-                onChange={(e) => props.setConversionConfig?.({
-                  ...props.conversionConfig,
-                  includeComments: e.target.checked
-                })}
-                className="rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-500"
-              />
-              Include explanatory comments
-            </label>
-          </div>
-          
-          <div>
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input 
-                type="checkbox" 
-                checked={props.conversionConfig?.validateSyntax || true}
-                onChange={(e) => props.setConversionConfig?.({
-                  ...props.conversionConfig,
-                  validateSyntax: e.target.checked
-                })}
-                className="rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-500"
-              />
-              Validate syntax during conversion
-            </label>
-          </div>
-
-          <div className="pt-2">
-            <div className="p-3 bg-gray-800 rounded text-xs border border-gray-700">
-              <div className="text-gray-300">🔄 Convert your code to the selected target format with enterprise-grade quality and validation.</div>
-            </div>
           </div>
         </div>
       </SidebarWrapper>
     );
   }
 
-  // Step 3: Validation Configuration
+  // Step 3: Validation Config
   if (currentStep === 3) {
     return (
       <SidebarWrapper title="✅ Validation Settings">
@@ -264,154 +412,40 @@ export default function WorkflowSidebar(props: WorkflowSidebarProps) {
             <label className="flex items-center gap-2 text-sm text-gray-300">
               <input 
                 type="checkbox" 
-                checked={props.validationConfig?.checkSyntax || true}
+                checked={props.validationConfig?.syntaxCheck || true}
                 onChange={(e) => props.setValidationConfig?.({
                   ...props.validationConfig,
-                  checkSyntax: e.target.checked
+                  syntaxCheck: e.target.checked
                 })}
                 className="rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-500"
               />
               Syntax validation
             </label>
           </div>
-          
-          <div>
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input 
-                type="checkbox" 
-                checked={props.validationConfig?.securityScan || true}
-                onChange={(e) => props.setValidationConfig?.({
-                  ...props.validationConfig,
-                  securityScan: e.target.checked
-                })}
-                className="rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-500"
-              />
-              Security vulnerability scan
-            </label>
-          </div>
-          
-          <div>
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input 
-                type="checkbox" 
-                checked={props.validationConfig?.performanceCheck || false}
-                onChange={(e) => props.setValidationConfig?.({
-                  ...props.validationConfig,
-                  performanceCheck: e.target.checked
-                })}
-                className="rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-500"
-              />
-              Performance analysis
-            </label>
-          </div>
-          
-          <div>
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input 
-                type="checkbox" 
-                checked={props.validationConfig?.bestPractices || true}
-                onChange={(e) => props.setValidationConfig?.({
-                  ...props.validationConfig,
-                  bestPractices: e.target.checked
-                })}
-                className="rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-500"
-              />
-              Best practices validation
-            </label>
-          </div>
-          
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Custom Rules</label>
-            <textarea 
-              value={props.validationConfig?.customRules?.join('\n') || ''}
-              onChange={(e) => props.setValidationConfig?.({
-                ...props.validationConfig,
-                customRules: e.target.value.split('\n').filter(rule => rule.trim())
-              })}
-              placeholder="Enter custom validation rules (one per line)"
-              className="w-full p-2 rounded border border-gray-600 text-sm bg-gray-800 text-gray-200 h-16 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-            />
-          </div>
-
-          <div className="pt-2">
-            <div className="p-3 bg-gray-800 rounded text-xs border border-gray-700">
-              <div className="text-gray-300">🔍 Comprehensive validation ensures code quality, security, and compliance with best practices.</div>
-            </div>
-          </div>
         </div>
       </SidebarWrapper>
     );
   }
 
-  // Step 4: Deployment Configuration
+  // Step 4: Deployment Config
   if (currentStep === 4) {
     return (
       <SidebarWrapper title="🚀 Deployment Settings">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Target Environment</label>
+            <label className="block text-sm text-gray-300 mb-2">Deployment Target</label>
             <select 
-              value={props.deploymentConfig?.environment || 'development'}
+              value={props.deploymentConfig?.target || 'local'}
               onChange={(e) => props.setDeploymentConfig?.({
                 ...props.deploymentConfig,
-                environment: e.target.value
+                target: e.target.value
               })}
               className="w-full p-2 rounded border border-gray-600 text-sm bg-gray-800 text-gray-200 focus:border-red-500 focus:ring-1 focus:ring-red-500"
             >
-              <option value="development">Development</option>
+              <option value="local">Local</option>
               <option value="staging">Staging</option>
               <option value="production">Production</option>
             </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Target Hosts</label>
-            <textarea 
-              value={props.deploymentConfig?.targetHosts?.join('\n') || ''}
-              onChange={(e) => props.setDeploymentConfig?.({
-                ...props.deploymentConfig,
-                targetHosts: e.target.value.split('\n').filter(host => host.trim())
-              })}
-              placeholder="server1.example.com&#10;server2.example.com"
-              className="w-full p-2 rounded border border-gray-600 text-sm bg-gray-800 text-gray-200 h-16 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm text-gray-300 mb-2">Rollback Strategy</label>
-            <select 
-              value={props.deploymentConfig?.rollbackStrategy || 'gradual'}
-              onChange={(e) => props.setDeploymentConfig?.({
-                ...props.deploymentConfig,
-                rollbackStrategy: e.target.value
-              })}
-              className="w-full p-2 rounded border border-gray-600 text-sm bg-gray-800 text-gray-200 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-            >
-              <option value="immediate">Immediate Rollback</option>
-              <option value="gradual">Gradual Rollback</option>
-              <option value="none">No Automatic Rollback</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input 
-                type="checkbox" 
-                checked={props.deploymentConfig?.notifications || true}
-                onChange={(e) => props.setDeploymentConfig?.({
-                  ...props.deploymentConfig,
-                  notifications: e.target.checked
-                })}
-                className="rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-500"
-              />
-              Send deployment notifications
-            </label>
-          </div>
-
-          <div className="pt-2">
-            <div className="p-3 bg-gray-800 rounded text-xs border border-gray-700">
-              <div className="text-gray-300">📡 Deploy your converted code to target environments with automated rollback and monitoring.</div>
-            </div>
           </div>
         </div>
       </SidebarWrapper>

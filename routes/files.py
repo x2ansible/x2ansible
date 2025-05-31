@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Body
 from fastapi.responses import JSONResponse
 from typing import List, Dict, Union
 import os
@@ -47,9 +47,9 @@ async def list_files_in_folder(folder: str):
 
 @router.get("/files/tree")
 async def get_file_tree(path: str = "") -> Dict[str, Union[str, list]]:
-    root = os.path.join(UPLOAD_DIR, path)
+    root = os.path.join(UPLOAD_DIR, path) if path else UPLOAD_DIR
     if not os.path.exists(root):
-        return JSONResponse(status_code=404, content={"error": "Path not found"})
+        return {"path": path, "items": []}  # Always return a JSON object
 
     def list_dir(folder):
         items = []
@@ -57,7 +57,12 @@ async def get_file_tree(path: str = "") -> Dict[str, Union[str, list]]:
             full = os.path.join(folder, entry)
             rel  = os.path.relpath(full, UPLOAD_DIR)
             if os.path.isdir(full):
-                items.append({"type": "folder", "name": entry, "path": rel})
+                items.append({
+                    "type": "folder",
+                    "name": entry,
+                    "path": rel,
+                    "items": list_dir(full)
+                })
             elif os.path.isfile(full) and entry.lower().endswith(
                 (".yml", ".yaml", ".rb", ".pp", ".json", ".tf")
             ):
@@ -65,6 +70,18 @@ async def get_file_tree(path: str = "") -> Dict[str, Union[str, list]]:
         return items
 
     return {"path": path, "items": list_dir(root)}
+
+
+@router.post("/files/get_many")
+async def get_many_files(files: List[str] = Body(...)):
+    contents = []
+    for rel_path in files:
+        abs_path = os.path.join(UPLOAD_DIR, rel_path)
+        if not os.path.isfile(abs_path):
+            continue
+        with open(abs_path, "r", encoding="utf-8") as f:
+            contents.append({"path": rel_path, "content": f.read()})
+    return {"files": contents}
 
 @router.post("/files/clone")
 async def clone_repo(url: str = Form(...)):
