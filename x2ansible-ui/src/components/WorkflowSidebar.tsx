@@ -47,21 +47,19 @@ interface WorkflowSidebarProps {
 // Clean fetchTree function
 async function fetchTree(path: string = ""): Promise<TreeNode[]> {
   try {
-    const baseUrl = process.env.NODE_ENV === "development" 
-      ? "http://localhost:8000" 
-      : "";
-    
+    const baseUrl = "";
+
     const url = path
       ? `${baseUrl}/api/files/tree?path=${encodeURIComponent(path)}`
       : `${baseUrl}/api/files/tree`;
-    
+
     const res = await fetch(url);
-    
+
     if (!res.ok) {
       console.error(`File tree fetch failed: ${res.status} ${res.statusText}`);
       return [];
     }
-    
+
     const data = await res.json();
     return data.items || [];
   } catch (e) {
@@ -83,56 +81,45 @@ export default function WorkflowSidebar(props: WorkflowSidebarProps) {
       alert("Please select at least one file first!");
       return;
     }
-    
+
     setAnalyzing(true);
-    
+
     try {
-      const baseUrl = process.env.NODE_ENV === "development" 
-        ? "http://localhost:8000" 
-        : "";
-      
+      const baseUrl = "";
+
       const response = await fetch(`${baseUrl}/api/files/get_many`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(selectedFiles),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch files: ${response.status} ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (data.files && Array.isArray(data.files) && data.files.length > 0) {
-        console.log("Successfully fetched files:", data.files.length);
-        
-        // Create combined content with better file separation and listing
-        const fileList = data.files.map(f => f.path).join(", ");
+        // TypeScript fix: type parameter for .map
+        const fileList = data.files.map((f: { path: string }) => f.path).join(", ");
         const combinedContent = `# Combined Analysis of ${data.files.length} files: ${fileList}
 
 ${data.files
-  .map(file => `
+  .map((file: { path: string; content: string }) => `
 # ========================================
 # File: ${file.path}
 # ========================================
 ${file.content}`)
   .join('\n\n')}`;
 
-        // CRITICAL: Update the code state first
         if (props.setCode) {
           props.setCode(combinedContent);
-          console.log("Updated code prop with combined content for files:", fileList);
         }
-
-        // Then call the classification handler
         props.handleManualClassify(data.files);
-        
-        console.log("Analysis completed successfully for:", fileList);
       } else {
         throw new Error("No files received from server or invalid format");
       }
-      
-    } catch (error) {
+    } catch (error: any) {
       console.error("Analysis failed:", error);
       alert(`Analysis failed: ${error.message}`);
     } finally {
@@ -192,8 +179,6 @@ ${file.content}`)
                 accept="*/*"
               />
             </label>
-            
-            {/* Analyze Button for uploaded file */}
             {props.code && (
               <button
                 onClick={() => props.handleManualClassify()}
@@ -312,8 +297,8 @@ ${file.content}`)
         <div className="space-y-4">
           <div>
             <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={props.contextConfig?.includeComments || false}
                 onChange={(e) => props.setContextConfig?.({
                   ...props.contextConfig,
@@ -326,9 +311,9 @@ ${file.content}`)
           </div>
           <div>
             <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input 
-                type="checkbox" 
-                checked={props.contextConfig?.analyzeDependencies || true}
+              <input
+                type="checkbox"
+                checked={props.contextConfig?.analyzeDependencies ?? true}
                 onChange={(e) => props.setContextConfig?.({
                   ...props.contextConfig,
                   analyzeDependencies: e.target.checked
@@ -340,7 +325,7 @@ ${file.content}`)
           </div>
           <div>
             <label className="block text-sm text-gray-300 mb-2">Environment Type</label>
-            <select 
+            <select
               value={props.contextConfig?.environmentType || 'development'}
               onChange={(e) => props.setContextConfig?.({
                 ...props.contextConfig,
@@ -355,7 +340,7 @@ ${file.content}`)
           </div>
           <div>
             <label className="block text-sm text-gray-300 mb-2">Scan Depth</label>
-            <select 
+            <select
               value={props.contextConfig?.scanDepth || 'medium'}
               onChange={(e) => props.setContextConfig?.({
                 ...props.contextConfig,
@@ -385,7 +370,7 @@ ${file.content}`)
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-gray-300 mb-2">Target Framework</label>
-            <select 
+            <select
               value={props.conversionConfig?.targetFramework || 'ansible'}
               onChange={(e) => props.setConversionConfig?.({
                 ...props.conversionConfig,
@@ -410,9 +395,9 @@ ${file.content}`)
         <div className="space-y-4">
           <div>
             <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input 
-                type="checkbox" 
-                checked={props.validationConfig?.syntaxCheck || true}
+              <input
+                type="checkbox"
+                checked={props.validationConfig?.syntaxCheck ?? true}
                 onChange={(e) => props.setValidationConfig?.({
                   ...props.validationConfig,
                   syntaxCheck: e.target.checked
@@ -434,7 +419,7 @@ ${file.content}`)
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-gray-300 mb-2">Deployment Target</label>
-            <select 
+            <select
               value={props.deploymentConfig?.target || 'local'}
               onChange={(e) => props.setDeploymentConfig?.({
                 ...props.deploymentConfig,

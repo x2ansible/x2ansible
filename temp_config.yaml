@@ -1,0 +1,10 @@
+llamastack:
+  endpoint: "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com"
+  api_key: null
+  timeout: 60
+
+model:
+  name: "meta-llama/Llama-3.2-3B-Instruct"
+
+# You may need to add other sections from your original config.yaml
+tool_approach: "client_tools"

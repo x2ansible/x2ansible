@@ -1,13 +1,9 @@
-// src/components/WorkflowResultPanel.tsx
 "use client";
 
 interface WorkflowResult {
-  // Common fields for all agents
   status: 'success' | 'error' | 'processing' | 'pending';
   duration_ms?: number;
   agent_type: 'classifier' | 'context' | 'converter' | 'validator' | 'deployer';
-  
-  // Agent-specific results
   classification?: {
     tool_language: string;
     summary: string;
@@ -15,35 +11,30 @@ interface WorkflowResult {
     manual_estimate_ms: number;
     speedup: number;
   };
-  
   context?: {
     dependencies: string[];
     environment: string;
     requirements: string[];
     recommendations: string[];
   };
-  
   conversion?: {
     output_format: string;
     conversion_type: string;
     generated_files: string[];
     warnings: string[];
   };
-  
   validation?: {
     syntax_valid: boolean;
     security_issues: string[];
     best_practices: string[];
     test_results: any[];
   };
-  
   deployment?: {
     target_environment: string;
     deployment_url?: string;
     status: string;
     rollback_available: boolean;
   };
-  
   error?: string;
 }
 
@@ -73,19 +64,13 @@ export default function WorkflowResultPanel({
   loading,
 }: WorkflowResultPanelProps) {
   const config = stepConfig[currentStep as keyof typeof stepConfig];
-  
+
   const formatResult = (result: WorkflowResult) => {
     let display = `${config.icon} ${config.title}\n\n`;
-    
-    // Common info
-    if (result.duration_ms) {
-      display += `⏱️ Processing Time: ${result.duration_ms.toFixed(1)}ms\n`;
-    }
+    if (result.duration_ms) display += `⏱️ Processing Time: ${result.duration_ms.toFixed(1)}ms\n`;
     display += `📊 Status: ${result.status.toUpperCase()}\n\n`;
-    
-    // Step-specific formatting
     switch (currentStep) {
-      case 0: // Classification
+      case 0:
         if (result.classification) {
           display += `🔍 Tool/Language: ${result.classification.tool_language}\n`;
           display += `📝 Summary: ${result.classification.summary}\n`;
@@ -94,8 +79,7 @@ export default function WorkflowResultPanel({
           display += `🚀 Speedup: ${result.classification.speedup.toFixed(1)}x faster\n`;
         }
         break;
-        
-      case 1: // Context
+      case 1:
         if (result.context) {
           display += `📦 Dependencies: ${result.context.dependencies.join(', ')}\n`;
           display += `🌍 Environment: ${result.context.environment}\n`;
@@ -105,8 +89,7 @@ export default function WorkflowResultPanel({
           result.context.recommendations.forEach(rec => display += `  • ${rec}\n`);
         }
         break;
-        
-      case 2: // Conversion
+      case 2:
         if (result.conversion) {
           display += `📄 Output Format: ${result.conversion.output_format}\n`;
           display += `🔄 Conversion Type: ${result.conversion.conversion_type}\n`;
@@ -118,8 +101,7 @@ export default function WorkflowResultPanel({
           }
         }
         break;
-        
-      case 3: // Validation
+      case 3:
         if (result.validation) {
           display += `✅ Syntax Valid: ${result.validation.syntax_valid ? 'Yes' : 'No'}\n`;
           display += `🔒 Security Issues: ${result.validation.security_issues.length}\n`;
@@ -128,23 +110,16 @@ export default function WorkflowResultPanel({
           result.validation.best_practices.forEach(practice => display += `  • ${practice}\n`);
         }
         break;
-        
-      case 4: // Deployment
+      case 4:
         if (result.deployment) {
           display += `🌍 Target Environment: ${result.deployment.target_environment}\n`;
           display += `📊 Status: ${result.deployment.status}\n`;
-          if (result.deployment.deployment_url) {
-            display += `🔗 URL: ${result.deployment.deployment_url}\n`;
-          }
+          if (result.deployment.deployment_url) display += `🔗 URL: ${result.deployment.deployment_url}\n`;
           display += `↩️ Rollback Available: ${result.deployment.rollback_available ? 'Yes' : 'No'}\n`;
         }
         break;
     }
-    
-    if (result.error) {
-      display += `\n❌ Error: ${result.error}\n`;
-    }
-    
+    if (result.error) display += `\n❌ Error: ${result.error}\n`;
     return display;
   };
 
@@ -173,7 +148,6 @@ export default function WorkflowResultPanel({
           {selectedFile || selectedGitFile || "No file selected"}
         </span>
       </div>
-
       {/* Content */}
       <div className="flex-1 p-0 overflow-hidden">
         {loading && (
@@ -188,7 +162,6 @@ export default function WorkflowResultPanel({
             </span>
           </div>
         )}
-
         <div className="h-full bg-gray-900 dark:bg-gray-900 text-gray-100 dark:text-gray-100 relative">
           <div className="absolute inset-0 overflow-auto rh-scrollbar">
             <pre className="p-4 text-sm font-mono leading-relaxed whitespace-pre-wrap min-w-max">
@@ -198,69 +171,6 @@ export default function WorkflowResultPanel({
                 ? `Click the ${config.title.split(' ')[0]} button to start ${config.title.toLowerCase()}.`
                 : "← Upload or select a file to begin."}
             </pre>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// src/components/WorkflowLogPanel.tsx
-"use client";
-
-interface WorkflowLogPanelProps {
-  logMessages: string[];
-  setLogMessages: (messages: string[]) => void;
-  currentStep: number;
-}
-
-const stepLogConfig = {
-  0: { title: "Classification Log", icon: "🔍", color: "blue" },
-  1: { title: "Context Analysis Log", icon: "📋", color: "purple" },
-  2: { title: "Conversion Log", icon: "⚙️", color: "orange" },
-  3: { title: "Validation Log", icon: "✅", color: "green" },
-  4: { title: "Deployment Log", icon: "🚀", color: "red" }
-};
-
-export default function WorkflowLogPanel({ logMessages, setLogMessages, currentStep }: WorkflowLogPanelProps) {
-  const config = stepLogConfig[currentStep as keyof typeof stepLogConfig];
-  
-  return (
-    <div className="bg-gray-800 dark:bg-gray-800 border border-gray-600 dark:border-gray-600 rounded-lg shadow-sm flex flex-col h-full">
-      {/* Dynamic Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-600 dark:border-gray-600 bg-gray-700 dark:bg-gray-700">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 bg-${config.color}-500 rounded-full animate-pulse`}></div>
-          <h2 className="text-sm font-semibold text-white dark:text-white">{config.icon} {config.title}</h2>
-        </div>
-        <button
-          onClick={() => setLogMessages([])}
-          className="text-xs text-gray-300 hover:text-white dark:text-gray-300 dark:hover:text-white px-2 py-1 hover:bg-gray-600 dark:hover:bg-gray-600 rounded transition-colors"
-        >
-          Clear
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 p-0 overflow-hidden">
-        <div className="h-full bg-gray-900 dark:bg-gray-900 text-gray-100 dark:text-gray-100 relative">
-          <div className="absolute inset-0 overflow-auto rh-scrollbar">
-            <div className="p-4 space-y-1 min-w-max">
-              {logMessages.length === 0 ? (
-                <div className="text-gray-400 dark:text-gray-400 text-sm italic py-8 text-center">
-                  No {config.title.toLowerCase()} yet...
-                </div>
-              ) : (
-                logMessages.map((log, i) => (
-                  <div 
-                    key={i} 
-                    className="text-sm font-mono text-gray-100 dark:text-gray-100 hover:bg-gray-800 dark:hover:bg-gray-800 px-2 py-1 rounded transition-colors whitespace-nowrap"
-                  >
-                    • {log}
-                  </div>
-                ))
-              )}
-            </div>
           </div>
         </div>
       </div>

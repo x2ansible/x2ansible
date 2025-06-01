@@ -33,40 +33,40 @@ export const useClassification = ({
 
   const classifyCode = useCallback(async (input: string) => {
     if (!input.trim()) {
-      addLog("⚠️ No code content to classify");
+      addLog(" No code content to classify");
       return;
     }
     setLoading(true);
     addLog("🧠 Classifier agent starting...");
 
     try {
+    
       const response = await apiCall(
-        `${BACKEND_URL}/api/classify`,
+        "/api/classify",
         { method: "POST", body: JSON.stringify({ code: input }) }
       );
 
-      // ✅ Handle wrapped format or flat result
+
       const result: ClassificationResponse = response?.data ?? response;
 
       if (!result || result.error) {
         throw new Error(result?.error || "No classification result received");
       }
 
-      console.log("🔥 Final parsed classification result:", result);
+      console.log(" Final parsed classification result:", result);
 
       setClassificationResult(result);
-      addLog("✅ Classification completed successfully");
+      addLog(" Classification completed successfully");
 
       if (result.duration_ms) {
         addLog(`⏱️ Classification took ${result.duration_ms.toFixed(1)}ms`);
       }
       if (result.speedup) {
-        addLog(`🚀 Estimated ${result.speedup.toFixed(1)}x speedup vs manual review`);
+        addLog(` Estimated ${result.speedup.toFixed(1)}x speedup vs manual review`);
       }
 
-      // if (step === 0) setStep(1);
     } catch (error) {
-      addLog(`❌ Classification failed: ${(error as Error).message}`);
+      addLog(` Classification failed: ${(error as Error).message}`);
       setClassificationResult(null);
     } finally {
       setLoading(false);
@@ -75,11 +75,11 @@ export const useClassification = ({
 
   const handleManualClassify = useCallback(() => {
     if (loading) {
-      addLog("⚠️ Classification already in progress");
+      addLog(" Classification already in progress");
       return;
     }
     if (!code.trim()) {
-      addLog("⚠️ No code loaded. Please select or upload a file first");
+      addLog(" No code loaded. Please select or upload a file first");
       return;
     }
     classifyCode(code);

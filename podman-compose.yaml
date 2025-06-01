@@ -1,0 +1,61 @@
+# Clean Docker Compose - No Built-in Health Checks
+version: '3.8'
+
+networks:
+  x2ansible:
+    driver: bridge
+
+volumes:
+  config-data:
+  uploads-data:
+  logs-data:
+
+services:
+  # Backend API Service
+  x2ansible-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: quay.io/rbrhssa/x2ansible-backend:latest
+    container_name: x2ansible-backend
+    hostname: x2ansible-backend
+    networks:
+      - x2ansible
+    ports:
+      - "8000:8000"
+    environment:
+      X2ANSIBLE_PROFILE: local
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - config-data:/app/config
+      - uploads-data:/app/uploads
+      - logs-data:/app/logs
+      - ./config.yaml:/app/config.yaml:ro
+    restart: unless-stopped
+    labels:
+      - "app=x2ansible"
+      - "component=backend"
+
+  # Frontend UI Service
+  x2ansible-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: quay.io/rbrhssa/x2ansible-ui:latest
+    container_name: x2ansible-frontend
+    hostname: x2ansible-frontend
+    networks:
+      - x2ansible
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_BACKEND_URL: http://x2ansible-backend:8000
+    depends_on:
+      - x2ansible-backend
+    restart: unless-stopped
+    labels:
+      - "app=x2ansible"
+      - "component=frontend"

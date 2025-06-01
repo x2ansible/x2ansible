@@ -1,10 +1,11 @@
 "use client";
 
+import React, { Suspense } from "react";
 import AdminPanel from "@/components/AdminPanel";
 import AdminNavigation from "@/components/AdminNavigation";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 
-export default function AdminPage() {
+function AdminPageContent() {
   const { 
     isLoading, 
     isUnauthenticated, 
@@ -55,10 +56,23 @@ export default function AdminPage() {
     );
   }
 
+  // Authenticated & admin
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <AdminNavigation />
       <AdminPanel />
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-slate-200 text-lg">Loading admin page...</div>
+      </div>
+    }>
+      <AdminPageContent />
+    </Suspense>
   );
 }

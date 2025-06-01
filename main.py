@@ -25,6 +25,9 @@ from agents.spec_agent import SpecAgent
 # Import config system - FIXED IMPORT!
 from config.agent_config import get_config
 
+# Import URL config system - NEW!
+from config.url_config import get_llama_stack_url, get_frontend_url
+
 from routes.validate import set_validation_agent
 from routes.classify import set_classifier_agent
 from routes.files import router as files_router, set_upload_dir
@@ -82,6 +85,13 @@ logging_cfg = config.get("logging", {})
 paths_cfg = config.get("paths", {})
 app_cfg = config.get("app", {})
 
+# Get URLs from URL config system - NEW!
+llama_stack_url = get_llama_stack_url()
+frontend_url = get_frontend_url()
+
+logger.info(f"Using Llama Stack URL: {llama_stack_url}")
+logger.info(f"Using frontend URL: {frontend_url}")
+
 # --- App/Build Info ---
 GIT_HASH = os.environ.get("GIT_HASH", "unknown")
 BUILD_TIME = os.environ.get("BUILD_TIME", "unknown")
@@ -95,7 +105,8 @@ code_generator_agent = None
 spec_agent = None
 
 try:
-    client = LlamaStackClient(base_url=llama_cfg["base_url"])
+    # Use URL config instead of direct config access - FIXED!
+    client = LlamaStackClient(base_url=llama_stack_url)
 
     # ClassifierAgent now uses config system automatically
     classifier = ClassifierAgent(client=client, model=llama_cfg["model"])
@@ -105,13 +116,16 @@ try:
     logger.info("ValidationAgent initialized")
 
     vector_db_id = vector_db_cfg.get("id")
-    context_agent = ContextAgent(llama_cfg["base_url"], llama_cfg["model"], vector_db_id)
+    # Use URL config - FIXED!
+    context_agent = ContextAgent(llama_stack_url, llama_cfg["model"], vector_db_id)
     logger.info("ContextAgent initialized")
 
-    code_generator_agent = CodeGeneratorAgent(llama_cfg["base_url"], llama_cfg["model"])
+    # Use URL config - FIXED!
+    code_generator_agent = CodeGeneratorAgent(llama_stack_url, llama_cfg["model"])
     logger.info("CodeGeneratorAgent initialized")
 
-    spec_agent = SpecAgent(llama_cfg["base_url"], llama_cfg["model"], vector_db_id)
+    # Use URL config - FIXED!
+    spec_agent = SpecAgent(llama_stack_url, llama_cfg["model"], vector_db_id)
     logger.info("SpecAgent initialized")
 
     # Inject agents into all route modules
@@ -123,7 +137,7 @@ try:
     set_spec_agent(
         spec_agent,
         model_id=llama_cfg["model"],
-        base_url=llama_cfg["base_url"],
+        base_url=llama_stack_url,  # Use URL config - FIXED!
         vector_db_id=vector_db_id
     )
     set_upload_dir(paths_cfg.get("uploads", "uploads"))
@@ -148,7 +162,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"   - ContextAgent: {'available' if context_agent else 'unavailable'} (Model: {getattr(context_agent, 'model', None) if context_agent else None})")
     logger.info(f"   - CodeGeneratorAgent: {'available' if code_generator_agent else 'unavailable'} (Model: {getattr(code_generator_agent, 'model', None) if code_generator_agent else None})")
     logger.info(f"   - SpecAgent: {'available' if spec_agent else 'unavailable'}")
-    logger.info(f"   - LlamaStack: {llama_cfg['base_url']}")
+    logger.info(f"   - LlamaStack: {llama_stack_url}")  # Use URL config - FIXED!
     
     # Log config system status
     try:
@@ -240,7 +254,7 @@ async def health_check():
                 "model": getattr(spec_agent, 'model', None) if spec_agent else None
             },
             "llama_stack": {
-                "base_url": llama_cfg["base_url"] if llama_cfg else None,
+                "base_url": llama_stack_url,  # Use URL config - FIXED!
                 "connected": True
             },
             "admin_config": {

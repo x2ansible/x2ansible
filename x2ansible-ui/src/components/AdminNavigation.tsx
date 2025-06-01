@@ -7,7 +7,8 @@ import { useSession } from 'next-auth/react';
 import { Settings } from 'lucide-react';
 
 const AdminNavigation: React.FC = () => {
-  const pathname = usePathname();
+  // PATCH: fallback to "" if null
+  const pathname = usePathname() || "";
   const { data: session, status } = useSession();
 
   // Allow only specific emails or development mode

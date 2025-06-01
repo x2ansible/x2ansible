@@ -1,12 +1,11 @@
 "use client";
 
 import { ChangeEvent, FormEvent } from "react";
-import { 
-  DocumentTextIcon, 
-  CloudArrowUpIcon, 
-  FolderOpenIcon, 
-  GitBranchIcon, 
-  MagnifyingGlassIcon 
+import {
+  DocumentTextIcon,
+  CloudArrowUpIcon,
+  FolderOpenIcon,
+  MagnifyingGlassIcon
 } from "@heroicons/react/24/outline";
 
 interface SourceSelectorProps {

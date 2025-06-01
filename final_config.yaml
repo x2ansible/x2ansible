@@ -1,0 +1,73 @@
+active_profile: local
+
+defaults:
+  llama_stack:
+    base_url: "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com"
+    model: "llama3.2:3b"
+  cors:
+    allow_origins:
+      - "http://host.containers.internal:3000"
+  paths:
+    uploads: "uploads"
+    docs: "docs"
+  vector_db:
+    id: "iac"
+    embedding_model: "all-MiniLM-L6-v2"
+    embedding_dim: 384
+    chunk_size: 512
+  agent_endpoints:
+    classifier: "http://host.containers.internal:8000/api/classify"      
+    context: "http://host.containers.internal:8000/api/context"
+    converter: "http://host.containers.internal:8000/api/convert"
+    validator: "http://host.containers.internal:8000/api/validate"
+  logging:
+    log_dir: "logs"
+    file: "agentic_model.log"
+    app_log: "app.log"
+    level: INFO
+  app:
+    version: "1.0.0"
+
+profiles:
+  local:
+    llama_stack:
+      base_url: "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com"  # ✅ Updated for container access
+    cors:
+      allow_origins:
+        - "http://localhost:3000"                        # Keep localhost for browser access
+        - "http://host.containers.internal:3000"         # Add container access
+    agent_endpoints:
+      classifier: "http://host.containers.internal:8000/api/classify"  # ✅ Updated
+      context: "http://host.containers.internal:8000/api/context"
+      converter: "http://host.containers.internal:8000/api/convert"
+      validator: "http://host.containers.internal:8000/api/validate"
+    logging:
+      level: DEBUG
+
+  openshift:
+    llama_stack:
+      base_url: "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com"
+    cors:
+      allow_origins:
+        - "http://x2ansible-frontend:3000"
+    agent_endpoints:
+      classifier: "http://x2ansible-api:8000/api/classify"
+      context: "http://x2ansible-api:8000/api/context"
+      converter: "http://x2ansible-api:8000/api/convert"
+      validator: "http://x2ansible-api:8000/api/validate"
+    logging:
+      level: INFO
+
+  staging:
+    llama_stack:
+      base_url: "http://llamastack-staging:8321"
+    cors:
+      allow_origins:
+        - "http://x2ansible-frontend-staging:3000"
+    agent_endpoints:
+      classifier: "http://x2ansible-api-staging:8000/api/classify"
+      context: "http://x2ansible-api-staging:8000/api/context"
+      converter: "http://x2ansible-api-staging:8000/api/convert"
+      validator: "http://x2ansible-api-staging:8000/api/validate"
+    logging:
+      level: INFO

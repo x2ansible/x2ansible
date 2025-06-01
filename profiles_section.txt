@@ -1,0 +1,21 @@
+profiles:
+  local:
+    llama_stack:
+      base_url: "http://host.containers.internal:8321"  # ✅ Updated for container access
+    cors:
+      allow_origins:
+        - "http://localhost:3000"                        # Keep localhost for browser access
+        - "http://host.containers.internal:3000"         # Add container access
+    agent_endpoints:
+      classifier: "http://host.containers.internal:8000/api/classify"  # ✅ Updated
+      context: "http://host.containers.internal:8000/api/context"
+      converter: "http://host.containers.internal:8000/api/convert"
+      validator: "http://host.containers.internal:8000/api/validate"
+    logging:
+      level: DEBUG
+
+  openshift:
+    llama_stack:
+      base_url: "http://llamastack:8321"
+    cors:
+      allow_origins:

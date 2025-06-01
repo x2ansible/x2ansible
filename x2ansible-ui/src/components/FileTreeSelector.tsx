@@ -20,9 +20,8 @@ class FileTreeAPI {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.NODE_ENV === "development" 
-      ? "http://localhost:8000" 
-      : "";
+    // ✅ Use environment variable instead of hardcoded URL
+    this.baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://host.containers.internal:8000";
   }
 
   async fetchTree(path: string = ""): Promise<TreeNode[]> {
@@ -116,7 +115,7 @@ export default function FileTreeSelector({
             onClick={() => toggleExpanded(node.path)}
           >
             {/* Clear, visible expansion indicator */}
-            <div className="w-6 h-6 flex items-center justify-center mr-1">
+            <div className="w-6 h-6 flex items-center justify-center mr-1 flex-shrink-0">
               <div className="w-4 h-4 bg-blue-500 rounded flex items-center justify-center">
                 <svg 
                   className="w-3 h-3 text-white transition-transform"
@@ -128,8 +127,8 @@ export default function FileTreeSelector({
                 </svg>
               </div>
             </div>
-            <FolderIcon className="w-4 h-4 text-yellow-500 mr-2" />
-            <span className="text-slate-200 text-sm font-medium">{node.name}</span>
+            <FolderIcon className="w-4 h-4 text-yellow-500 mr-2 flex-shrink-0" />
+            <span className="text-slate-200 text-sm font-medium truncate">{node.name}</span>
           </div>
           
           {isExpanded && node.items && (
@@ -143,17 +142,18 @@ export default function FileTreeSelector({
 
     return (
       <div key={node.path} className="flex items-center py-1 px-2 hover:bg-slate-700/30 rounded">
-        <div className="w-6 mr-1" />
+        <div className="w-6 mr-1 flex-shrink-0" />
         <input
           type="checkbox"
           checked={isSelected}
           onChange={() => toggleFileSelection(node.path)}
-          className="mr-2 rounded accent-blue-500"
+          className="mr-2 rounded accent-blue-500 flex-shrink-0"
         />
-        <DocumentIcon className="w-4 h-4 text-blue-400 mr-2" />
+        <DocumentIcon className="w-4 h-4 text-blue-400 mr-2 flex-shrink-0" />
         <label 
-          className="text-slate-300 text-sm cursor-pointer"
+          className="text-slate-300 text-sm cursor-pointer truncate flex-1 min-w-0"
           onClick={() => toggleFileSelection(node.path)}
+          title={node.name} // Add tooltip for full name
         >
           {node.name}
         </label>
@@ -162,21 +162,22 @@ export default function FileTreeSelector({
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-lg">
+    // WIDER CONTAINER - increased from default to w-80 (320px) or w-96 (384px)
+    <div className="w-80 bg-slate-900 border border-slate-700 rounded-lg flex-shrink-0">
       {/* Header */}
       <div className="px-4 py-3 border-b border-slate-700 bg-slate-800 rounded-t-lg">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white">📁 File Explorer</h3>
           {selectedFiles.length > 0 && (
-            <span className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs">
+            <span className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs flex-shrink-0">
               {selectedFiles.length} selected
             </span>
           )}
         </div>
       </div>
 
-      {/* Tree */}
-      <div className="p-3 h-64 overflow-y-auto">
+      {/* Tree - increased height and improved scrolling */}
+      <div className="p-3 h-80 overflow-y-auto">
         {loading ? (
           <div className="text-slate-500 text-center py-8">Loading files...</div>
         ) : tree.length === 0 ? (
@@ -188,20 +189,25 @@ export default function FileTreeSelector({
         )}
       </div>
 
-      {/* Selected Files List */}
+      {/* Selected Files List - improved scrolling and layout */}
       {selectedFiles.length > 0 && (
         <div className="border-t border-slate-700 p-3">
           <div className="text-xs font-medium text-slate-400 mb-2">Selected Files:</div>
-          <div className="space-y-1 max-h-20 overflow-y-auto">
+          <div className="space-y-1 max-h-24 overflow-y-auto">
             {selectedFiles.map(file => (
               <div key={file} className="flex items-center justify-between text-xs">
-                <span className="text-slate-300 truncate">{file}</span>
+                <span 
+                  className="text-slate-300 truncate flex-1 min-w-0 mr-2" 
+                  title={file} // Add tooltip for full path
+                >
+                  {file}
+                </span>
                 <button
                   onClick={() => {
                     const newSelection = selectedFiles.filter(f => f !== file);
                     setSelectedFiles(newSelection);
                   }}
-                  className="text-red-400 hover:text-red-300 ml-2"
+                  className="text-red-400 hover:text-red-300 flex-shrink-0 w-4 h-4 flex items-center justify-center"
                 >
                   ×
                 </button>
@@ -210,8 +216,6 @@ export default function FileTreeSelector({
           </div>
         </div>
       )}
-
-      {/* This component is just for display - the analyze button is in WorkflowSidebar */}
     </div>
   );
 }

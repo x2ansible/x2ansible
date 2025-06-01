@@ -1,0 +1,72 @@
+active_profile: local
+
+defaults:
+  llama_stack:
+    base_url: "http://localhost:8321"
+    model: "llama3.2:3b"
+  cors:
+    allow_origins:
+      - "http://localhost:3000"
+  paths:
+    uploads: "uploads"
+    docs: "docs"
+  vector_db:
+    id: "iac"
+    embedding_model: "all-MiniLM-L6-v2"
+    embedding_dim: 384
+    chunk_size: 512
+  agent_endpoints:
+    classifier: "http://localhost:8000/api/classify"      
+    context: "http://localhost:8000/api/context"
+    converter: "http://localhost:8000/api/convert"
+    validator: "http://localhost:8000/api/validate"
+  logging:
+    log_dir: "logs"
+    file: "agentic_model.log"
+    app_log: "app.log"
+    level: INFO
+  app:
+    version: "1.0.0"
+
+profiles:
+  local:
+    llama_stack:
+      base_url: "http://localhost:8321"
+    cors:
+      allow_origins:
+        - "http://localhost:3000"
+    agent_endpoints:                                      # ✅ Add this!
+      classifier: "http://localhost:8000/api/classify"
+      context: "http://localhost:8000/api/context"
+      converter: "http://localhost:8000/api/convert"
+      validator: "http://localhost:8000/api/validate"
+    logging:
+      level: DEBUG
+
+  openshift:
+    llama_stack:
+      base_url: "http://llamastack:8321"
+    cors:
+      allow_origins:
+        - "http://x2ansible-frontend:3000"                # ✅ Update this too
+    agent_endpoints:                                      # ✅ Add this!
+      classifier: "http://x2ansible-api:8000/api/classify"
+      context: "http://x2ansible-api:8000/api/context"
+      converter: "http://x2ansible-api:8000/api/convert"
+      validator: "http://x2ansible-api:8000/api/validate"
+    logging:
+      level: INFO
+
+  staging:
+    llama_stack:
+      base_url: "http://llamastack-staging:8321"
+    cors:
+      allow_origins:
+        - "http://x2ansible-frontend-staging:3000"        # ✅ Update this
+    agent_endpoints:                                      # ✅ Add this!
+      classifier: "http://x2ansible-api-staging:8000/api/classify"
+      context: "http://x2ansible-api-staging:8000/api/context"
+      converter: "http://x2ansible-api-staging:8000/api/convert"
+      validator: "http://x2ansible-api-staging:8000/api/validate"
+    logging:
+      level: INFO

@@ -42,8 +42,10 @@ export function useSidebarManager(config: SidebarManagerConfig = {}) {
   // User interaction tracking
   const [userManuallyToggled, setUserManuallyToggled] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
-  const userPreferenceTimeout = useRef<NodeJS.Timeout>();
-  const autoHideTimeout = useRef<NodeJS.Timeout>();
+
+  // ✅ Fix: Initialize with null!
+  const userPreferenceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const autoHideTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Screen size detection with enhanced breakpoints
   useEffect(() => {
@@ -132,13 +134,13 @@ export function useSidebarManager(config: SidebarManagerConfig = {}) {
   const toggleLeftSidebar = useCallback(() => {
     setLeftSidebarVisible(prev => !prev);
     setUserManuallyToggled(true);
-    
+
     if (respectUserPreference) {
       // Clear existing timeout
       if (userPreferenceTimeout.current) {
         clearTimeout(userPreferenceTimeout.current);
       }
-      
+
       // Reset user manual flag after 10 seconds of inactivity
       userPreferenceTimeout.current = setTimeout(() => {
         setUserManuallyToggled(false);
@@ -148,15 +150,15 @@ export function useSidebarManager(config: SidebarManagerConfig = {}) {
 
   const toggleRightSidebar = useCallback(() => {
     if (screenSize.isMobile) return; // Don't show right sidebar on mobile
-    
+
     setRightSidebarVisible(prev => !prev);
     setUserManuallyToggled(true);
-    
+
     if (respectUserPreference) {
       if (userPreferenceTimeout.current) {
         clearTimeout(userPreferenceTimeout.current);
       }
-      
+
       userPreferenceTimeout.current = setTimeout(() => {
         setUserManuallyToggled(false);
       }, 10000);
@@ -189,7 +191,7 @@ export function useSidebarManager(config: SidebarManagerConfig = {}) {
   // Reset to defaults based on screen size
   const resetToDefaults = useCallback(() => {
     setUserManuallyToggled(false);
-    
+
     if (screenSize.isMobile || screenSize.isTablet) {
       setLeftSidebarVisible(false);
       setRightSidebarVisible(false);
@@ -206,7 +208,7 @@ export function useSidebarManager(config: SidebarManagerConfig = {}) {
   const getLayoutClasses = useCallback(() => {
     const showLeft = leftSidebarVisible;
     const showRight = rightSidebarVisible && !screenSize.isMobile;
-    
+
     if (showLeft && showRight) {
       if (screenSize.isSmallLaptop) return "grid-cols-[280px_1fr_260px]";
       if (screenSize.isMediumLaptop) return "grid-cols-[300px_1fr_280px]";
@@ -251,7 +253,7 @@ export function useSidebarManager(config: SidebarManagerConfig = {}) {
     screenSize,
     userManuallyToggled,
     lastAction,
-    
+
     // Actions
     autoHideAfterAction,
     toggleLeftSidebar,
@@ -261,11 +263,11 @@ export function useSidebarManager(config: SidebarManagerConfig = {}) {
     showRightSidebar,
     hideRightSidebar,
     resetToDefaults,
-    
+
     // Utilities
     getLayoutClasses,
     getScreenLabel,
-    
+
     // Computed properties
     shouldShowRightSidebar: rightSidebarVisible && !screenSize.isMobile,
     canShowRightSidebar: !screenSize.isMobile,

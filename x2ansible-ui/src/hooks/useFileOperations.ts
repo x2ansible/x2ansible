@@ -55,7 +55,10 @@ export const useFileOperations = ({
   const fetchFolders = useCallback(async () => {
     try {
       addLogMessage("📂 Fetching available folders...");
-      const data: FileListResponse = await apiCall(`${BACKEND_URL}/api/files/list`);
+
+      const data: FileListResponse = await apiCall(
+        "/api/files/list"
+      );
       if (data.error) throw new Error(data.error);
 
       const unique = Array.from(
@@ -67,7 +70,7 @@ export const useFileOperations = ({
       setFolderList(unique);
       addLogMessage(`📂 Found ${unique.length} folders`);
     } catch (error) {
-      addLogMessage(`❌ ${(error as Error).message}`);
+      addLogMessage(` ${(error as Error).message}`);
     }
   }, [BACKEND_URL, gitRepoName]); // Removed addLogMessage and setFolderList from dependencies
 
@@ -81,7 +84,7 @@ export const useFileOperations = ({
       setFileList(data.files || []);
       addLogMessage(`📄 Found ${data.files?.length || 0} files`);
     } catch (error) {
-      addLogMessage(`❌ ${(error as Error).message}`);
+      addLogMessage(` ${(error as Error).message}`);
     }
   }, [BACKEND_URL]); // Removed function dependencies
 
@@ -98,13 +101,13 @@ export const useFileOperations = ({
 
       setCode(text);
       setSelectedFile(file);
-      addLogMessage(`✅ File loaded: ${text.length} characters`);
+      addLogMessage(` File loaded: ${text.length} characters`);
     } catch (error) {
-      addLogMessage(`❌ ${(error as Error).message}`);
+      addLogMessage(` ${(error as Error).message}`);
     } finally {
       setLoading(false);
     }
-  }, [BACKEND_URL]); // Removed function dependencies
+  }, [BACKEND_URL]); 
 
   const handleUpload = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,24 +124,28 @@ export const useFileOperations = ({
       const formData = new FormData();
       formData.append("files", file);
 
-      const resp = await fetch(`${BACKEND_URL}/api/files/upload`, {
-        method: "POST",
-        body: formData,
-      });
+      // ✅ Use your existing environment variable
+      const resp = await fetch(
+        "/api/files/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
       if (!resp.ok) throw new Error(`Server upload failed: ${resp.status}`);
 
       const data: FileUploadResponse = await resp.json();
       if (data.error) throw new Error(`Server error: ${data.error}`);
 
-      addSidebarMessage(`✅ File uploaded successfully: ${data.saved_files.join(", ")}`);
+      addSidebarMessage(` File uploaded successfully: ${data.saved_files.join(", ")}`);
     } catch (error) {
-      addLogMessage(`❌ File processing failed: ${(error as Error).message}`);
+      addLogMessage(` File processing failed: ${(error as Error).message}`);
       setCode("");
       setSelectedFile("");
     } finally {
       setUploadKey(Date.now());
     }
-  }, [BACKEND_URL]); // Removed function dependencies
+  }, [BACKEND_URL]); 
 
   return {
     fetchFolders,

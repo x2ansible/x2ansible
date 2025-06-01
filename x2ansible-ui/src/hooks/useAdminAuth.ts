@@ -1,4 +1,3 @@
-// hooks/useAdminAuth.ts
 "use client";
 
 import { useSession } from "next-auth/react";
@@ -9,14 +8,16 @@ export function useAdminAuth() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // Check if user has admin privileges
   const allowedEmails = ["rbanda@redhat.com"];
-  const isAdmin = session?.user?.email && allowedEmails.includes(session.user.email) ||
-                  process.env.NODE_ENV === "development";
-  
-  const fromWorkflow = searchParams.get('from') || 'x2ansible';
-  
+  const isAdmin =
+    (session?.user?.email && allowedEmails.includes(session.user.email)) ||
+    process.env.NODE_ENV === "development";
+
+  // Safe null-check
+  const fromWorkflow = searchParams?.get('from') || 'x2ansible';
+
   useEffect(() => {
     if (status === "unauthenticated") {
       // Redirect to home page for authentication, preserve the return path

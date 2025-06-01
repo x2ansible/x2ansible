@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -10,7 +10,6 @@ import ContextSidebar from "@/components/ContextSidebar";
 import WorkflowSidebar from "@/components/WorkflowSidebar";
 import ClassificationPanel from "@/components/ClassificationPanel";
 import AgentLogPanel from "@/components/AgentLogPanel";
-import SystemMessages from "@/components/SystemMessages";
 import ThemeToggle from "@/components/ThemeToggle";
 import GatedProgressSteps from "@/components/GatedProgressSteps";
 import GeneratePanel from "@/components/GeneratePanel";
@@ -25,10 +24,10 @@ import { useGitOperations } from "@/hooks/useGitOperations";
 import { useClassification } from "@/hooks/useClassification";
 import { ClassificationResponse } from "@/types/api";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://host.containers.internal:8000";
 const steps = ["Analyze", "Context", "Convert", "Validate", "Deploy"];
 
-export default function RunWorkflowPage() {
+function RunWorkflowPageInner() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,7 +60,7 @@ export default function RunWorkflowPage() {
   const [sidebarMessages, setSidebarMessages] = useState<string[]>([]);
 
   // Classification and workflow results
-  const [classificationResult, setClassificationResult] = useState<ClassificationResponse | null>(null);
+  const [classificationResult, setClassificationResult] = useState<ClassificationResponse | undefined>(undefined);
   const [retrievedContext, setRetrievedContext] = useState<string>("");
   const [generatedPlaybook, setGeneratedPlaybook] = useState<string>("");
   const [validationResult, setValidationResult] = useState<any>(null);
@@ -83,7 +82,7 @@ export default function RunWorkflowPage() {
     useRoles: false,
     useVars: false
   });
-  
+
   const [validationConfig, setValidationConfig] = useState({
     checkSyntax: true,
     securityScan: true,
@@ -144,11 +143,11 @@ export default function RunWorkflowPage() {
     markStepAsCompleted(3);
     setLoading(false);
     addLogMessage("✅ Validation completed successfully");
-    
+
     const issueCount = result.issues?.length || 0;
-    const status = result.passed ? "PASSED" : "FAILED"; 
+    const status = result.passed ? "PASSED" : "FAILED";
     addLogMessage(`📊 Validation ${status} with ${issueCount} issues found`);
-    
+
     if (result.debug_info?.num_issues !== undefined) {
       addLogMessage(`🔍 Debug: ${result.debug_info.num_issues} issues processed`);
     }
@@ -166,45 +165,39 @@ export default function RunWorkflowPage() {
 
   // Custom hooks
   const { fetchFolders, fetchFilesInFolder, fetchFileContent, handleUpload } = useFileOperations({
-    BACKEND_URL, 
-    setFolderList, 
-    setFileList, 
-    setCode, 
-    setSelectedFile, 
-    setUploadKey, 
-    addLogMessage, 
-    addSidebarMessage, 
-    gitRepoName, 
+    BACKEND_URL,
+    setFolderList,
+    setFileList,
+    setCode,
+    setSelectedFile,
+    setUploadKey,
+    addLogMessage,
+    addSidebarMessage,
+    gitRepoName,
     setLoading
   });
 
   const { handleCloneRepo, fetchGitFolders, fetchGitFiles, fetchGitFileContent } = useGitOperations({
-    BACKEND_URL, 
-    gitUrl, 
-    setGitRepoName, 
-    setGitFolderList, 
-    setGitFileList, 
-    setCode, 
-    setSelectedGitFile, 
-    addLogMessage, 
-    addSidebarMessage, 
+    BACKEND_URL,
+    gitUrl,
+    setGitRepoName,
+    setGitFolderList,
+    setGitFileList,
+    setCode,
+    setSelectedGitFile,
+    addLogMessage,
+    addSidebarMessage,
     setLoading
   });
 
-  // FIXED: Multi-file classification handler with proper debugging
+  // Multi-file classification handler with proper debugging
   const handleManualClassify = (files?: { path: string; content: string }[]) => {
     if (loading) {
       addLogMessage("⚠️ Classification already in progress");
       return;
     }
 
-    // Handle multi-file classification
     if (files && files.length > 0) {
-      console.log("🔍 Multi-file classification starting with", files.length, "files");
-      console.log("🔍 Files received:", files.map(f => f.path));
-      addLogMessage(`🔍 Starting multi-file analysis for ${files.length} files`);
-      
-      // Create combined content with better formatting
       const fileList = files.map(f => f.path).join(", ");
       const combinedContent = `# Combined Analysis of ${files.length} files: ${fileList}
 
@@ -215,33 +208,22 @@ ${files
 # ========================================
 ${file.content}`)
   .join('\n\n')}`;
-      
-      console.log("🔍 Combined content length:", combinedContent.length);
-      console.log("🔍 Combined content preview:", combinedContent.substring(0, 300) + "...");
-      console.log("🔍 File list:", fileList);
-      
-      // Update code state
+
       setCode(combinedContent);
       addLogMessage(`📄 Combined ${files.length} files: ${fileList}`);
       addLogMessage(`📊 Total content: ${combinedContent.length} characters`);
-      
-      // Run classification on combined content with delay to ensure state update
+
       setTimeout(() => {
-        console.log("🔍 About to call classifyCode with length:", combinedContent.length);
-        console.log("🔍 Content starts with:", combinedContent.substring(0, 100));
         classifyCode(combinedContent);
       }, 200);
-      
+
       return;
     }
 
-    // Handle single-file classification
     if (!code.trim()) {
       addLogMessage("⚠️ No code loaded. Please select or upload a file first");
       return;
     }
-    
-    console.log("🔍 Single file classification with length:", code.length);
     classifyCode(code);
   };
 
@@ -249,8 +231,7 @@ ${file.content}`)
     BACKEND_URL,
     code,
     setClassificationResult: (result) => {
-      console.log("🔍 DEBUG - Classification result received:", result);
-      setClassificationResult(result);
+      setClassificationResult(result ?? undefined); // <- The key fix!
       if (result && !result.error) {
         markStepAsCompleted(0);
         addLogMessage("✅ Analysis completed - ready for next step");
@@ -283,19 +264,14 @@ ${file.content}`)
     }
   }, [retrievedContext, completedSteps]);
 
-  useEffect(() => {
-    console.log("🔍 DEBUG - classificationResult state updated:", classificationResult);
-  }, [classificationResult]);
-
   // Check if user has admin privileges
   const allowedEmails = ["rbanda@redhat.com"];
   const isAdmin = session?.user?.email && allowedEmails.includes(session.user.email) ||
-                  process.env.NODE_ENV === "development"; // Allow in dev mode
+                  process.env.NODE_ENV === "development";
 
-  // Get current workflow for admin link
-  const currentWorkflow = searchParams.get('workflow') || 'x2ansible';
+  // Get current workflow for admin link (null-safe)
+  const currentWorkflow = searchParams?.get('workflow') || 'x2ansible';
 
-  // Loading state
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -307,7 +283,6 @@ ${file.content}`)
     );
   }
 
-  // Unauthenticated state
   if (status === "unauthenticated") {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
@@ -445,7 +420,7 @@ ${file.content}`)
             />
           )}
         </div>
-        
+
         {/* CENTER PANEL */}
         <div className="x2a-main-panel">
           {step === 1 ? (
@@ -523,9 +498,21 @@ ${file.content}`)
           />
         </div>
       </div>
-
-      {/* FOOTER SYSTEM MESSAGES */}
-      {/* <SystemMessages messages={sidebarMessages} /> */}
     </div>
+  );
+}
+
+export default function RunWorkflowPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading workflow...</p>
+        </div>
+      </div>
+    }>
+      <RunWorkflowPageInner />
+    </Suspense>
   );
 }

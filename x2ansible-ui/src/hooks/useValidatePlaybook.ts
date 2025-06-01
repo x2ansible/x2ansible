@@ -24,7 +24,7 @@ export const useValidatePlaybook = () => {
       setValidationError(null);
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/validate`, {
+        const response = await fetch('/api/validate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ playbook, lint_profile }),

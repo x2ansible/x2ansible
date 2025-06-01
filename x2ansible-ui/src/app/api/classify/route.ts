@@ -1,41 +1,56 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from "next/server";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://host.containers.internal:8000";
 
-  const { code } = req.body;
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const code = body.code;
 
-  if (!code || typeof code !== 'string' || !code.trim()) {
-    return res.status(400).json({ error: 'Code snippet is required' });
+  if (!code || typeof code !== "string" || !code.trim()) {
+    return NextResponse.json({ error: "Code snippet is required" }, { status: 400 });
   }
 
   try {
-    const backendURL = 'http://localhost:8000/api/classify'; // ✅ Set this to your Python FastAPI endpoint
-
-    const response = await fetch(backendURL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    console.log(`🚀 Making classification request to: ${BACKEND_URL}/api/classify`);
+    
+    const response = await fetch(`${BACKEND_URL}/api/classify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code }),
     });
+
+    console.log(`📥 Backend response status: ${response.status}`);
 
     const result = await response.json();
 
     if (!response.ok) {
-      console.error('❌ Classifier backend error:', result);
-      return res.status(response.status).json({ error: result?.detail || 'Backend error' });
+      console.error("❌ Classifier backend error:", result);
+      return NextResponse.json(
+        { error: result?.detail || "Backend error" },
+        { status: response.status }
+      );
     }
 
-    if (result.success && result.data) {
-      return res.status(200).json(result.data); // ✅ return only the flat classification result
-    }
+    // Handle direct classification response (no wrapper)
+  if (result.classification) {
+    return NextResponse.json(result, { status: 200 });
+  }
+  
+  // Handle wrapped response format
+  if (result.success && result.data) {
+    return NextResponse.json(result.data, { status: 200 });
+  }
 
-    console.error('❌ Invalid classifier result structure:', result);
-    return res.status(500).json({ error: result.error || 'Invalid classifier response' });
-
+    console.error("❌ Invalid classifier result structure:", result);
+    return NextResponse.json(
+      { error: result.error || "Invalid classifier response" },
+      { status: 500 }
+    );
   } catch (err: any) {
-    console.error('❌ Exception while calling classifier backend:', err);
-    return res.status(500).json({ error: 'Classification failed due to internal error.' });
+    console.error("❌ Exception while calling classifier backend:", err);
+    return NextResponse.json(
+      { error: "Classification failed due to internal error." },
+      { status: 500 }
+    );
   }
 }

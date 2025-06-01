@@ -51,7 +51,7 @@ interface ValidationIssue {
 
 interface ValidationResult {
   passed: boolean;
-  summary: any; // can be string or object depending on backend
+  summary: any;
   issues: ValidationIssue[];
   raw_output: string | { stdout?: string; stderr?: string };
   debug_info: {
@@ -63,7 +63,9 @@ interface ValidationResult {
     info_count?: number;
     [key: string]: any;
   };
+  error_message?: string; // <-- Add this line
 }
+
 
 // --- Main Panel ---
 
@@ -486,9 +488,9 @@ const ValidationPanel: React.FC<ValidationPanelProps> = ({
                                 <span>Column {issue.column}</span>
                               )}
                             </div>
-                            {issue.tag && issue.tag.length > 0 && (
+                            {Array.isArray(issue.tag) && issue.tag.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-3">
-                                {issue.tag.map((tag, tagIndex) => (
+                                {issue.tag.map((tag: string, tagIndex: number) => (
                                   <span
                                     key={tagIndex}
                                     className="text-xs bg-slate-700/50 text-slate-300 px-2 py-1 rounded"

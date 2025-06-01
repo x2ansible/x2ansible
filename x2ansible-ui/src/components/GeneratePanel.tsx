@@ -59,8 +59,6 @@ export default function GeneratePanel({
   const codeCanvasRef = useRef<HTMLPreElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-
   const logMessage = useCallback((msg: string) => {
     onLogMessage?.(msg);
   }, [onLogMessage]);
@@ -128,7 +126,8 @@ export default function GeneratePanel({
         input_code: code,
         context: context
       };
-      const response = await fetch(`${BACKEND_URL}/api/generate`, {
+      // ✅ Use Next.js API route instead of direct backend call
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(payload)
@@ -153,7 +152,7 @@ export default function GeneratePanel({
     } finally {
       setLoading(false);
     }
-  }, [code, context, startStreaming, onComplete, logMessage, BACKEND_URL]);
+  }, [code, context, startStreaming, onComplete, logMessage]);
 
   const copyToClipboard = useCallback(async (text: string) => {
     try {

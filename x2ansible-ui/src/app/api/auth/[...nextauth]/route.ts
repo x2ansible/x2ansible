@@ -1,10 +1,9 @@
 import NextAuth from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
-import { NextAuthOptions } from "next-auth";
 
 const allowedEmails = ["rbanda@redhat.com"]; // ✅ allow by email
 
-export const authOptions: NextAuthOptions = {
+const handler = NextAuth({
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
@@ -20,7 +19,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-};
+});
 
-const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };

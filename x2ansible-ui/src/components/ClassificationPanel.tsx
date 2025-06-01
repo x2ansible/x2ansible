@@ -13,16 +13,16 @@ import {
   Info
 } from 'lucide-react';
 
-interface ClassificationResult {
+export interface ClassificationResult {
   classification: string;
   summary?: string;
-  detailed_analysis?: string; // Used for complexity explanation popover
+  detailed_analysis?: string;
   resources?: string[];
   key_operations?: string[];
   dependencies?: string;
   configuration_details?: string;
   complexity_level?: string;
-  convertible: boolean;
+  convertible?: boolean; // Made optional to match ClassificationResponse
   conversion_notes?: string;
   duration_ms?: number;
   manual_estimate_ms?: number;
@@ -83,6 +83,9 @@ const ClassificationPanel: React.FC<{
     if (ms < 1000) return `${ms.toFixed(0)}ms`;
     return `${(ms / 1000).toFixed(1)}s`;
   };
+
+  // Handle optional convertible property with fallback
+  const isConvertible = result.convertible ?? false;
 
   const TabButton: React.FC<{
     id: Tab;
@@ -145,16 +148,16 @@ const ClassificationPanel: React.FC<{
             </div>
             <div className="text-center bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
               <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
-                result.convertible 
+                isConvertible 
                   ? 'bg-green-900/30 text-green-400 border border-green-500/30' 
                   : 'bg-red-900/30 text-red-400 border border-red-500/30'
               }`}>
-                {result.convertible ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                {result.convertible ? 'Yes' : 'No'}
+                {isConvertible ? <CheckCircle size={12} /> : <XCircle size={12} />}
+                {isConvertible ? 'Yes' : 'No'}
               </div>
               <div className="text-xs text-gray-500 mt-1">Convertible</div>
             </div>
-            {/* ---- PATCHED: Complexity stat, info icon shows popover ---- */}
+            {/* Complexity stat, info icon shows popover */}
             <div className="text-center bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 relative">
               <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${getComplexityColor(complexityLabel)}`}>
                 <span className="text-xs">{getComplexityIcon(complexityLabel)}</span>
@@ -191,7 +194,6 @@ const ClassificationPanel: React.FC<{
                 </div>
               )}
             </div>
-            {/* -------------------------------------------------------- */}
             <div className="text-center bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
               <div className="text-sm font-bold text-gray-300 flex items-center justify-center gap-1">
                 <Clock size={12} />
@@ -307,23 +309,23 @@ const ClassificationPanel: React.FC<{
         {activeTab === 'conversion' && (
           <div className="space-y-4">
             <div className={`p-3 rounded-lg border-l-4 ${
-              result.convertible
+              isConvertible
                 ? 'bg-green-900/20 border-green-500 border-green-500/50'
                 : 'bg-red-900/20 border-red-500 border-red-500/50'
             }`}>
               <div className="flex items-center gap-2 mb-2">
-                {result.convertible ? (
+                {isConvertible ? (
                   <CheckCircle className="text-green-400" size={16} />
                 ) : (
                   <XCircle className="text-red-400" size={16} />
                 )}
                 <h3 className={`font-semibold text-sm ${
-                  result.convertible ? 'text-green-300' : 'text-red-300'
+                  isConvertible ? 'text-green-300' : 'text-red-300'
                 }`}>
-                  {result.convertible ? 'Conversion Possible' : 'Conversion Not Recommended'}
+                  {isConvertible ? 'Conversion Possible' : 'Conversion Not Recommended'}
                 </h3>
               </div>
-              <p className={`text-sm ${result.convertible ? 'text-green-200' : 'text-red-200'}`}>
+              <p className={`text-sm ${isConvertible ? 'text-green-200' : 'text-red-200'}`}>
                 {result.conversion_notes || 'No conversion notes available.'}
               </p>
             </div>

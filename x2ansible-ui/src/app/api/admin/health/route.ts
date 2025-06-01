@@ -1,7 +1,7 @@
 // app/api/admin/health/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "http://host.containers.internal:8000";
 
 // GET /api/admin/health - Health check for admin API
 export async function GET(request: NextRequest) {

@@ -83,7 +83,7 @@ export default function DeploymentPanel({
   const logsRef = useRef<HTMLPreElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://host.containers.internal:8000";
 
   const logMessage = useCallback((msg: string) => {
     const timestamp = new Date().toLocaleTimeString();

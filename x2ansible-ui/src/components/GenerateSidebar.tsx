@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   SparklesIcon,
   ClipboardDocumentCheckIcon,
@@ -16,6 +16,7 @@ interface GenerateSidebarProps {
     useHandlers: boolean;
     useRoles: boolean;
     useVars: boolean;
+    // You can add more, but only booleans will render checkboxes below
   };
   setConversionConfig: (config: any) => void;
   contextSummary?: {
@@ -35,6 +36,15 @@ export default function GenerateSidebar({
   const handleChange = (key: string, value: any) => {
     setConversionConfig({ ...conversionConfig, [key]: value });
   };
+
+  // PATCH: List keys and labels for booleans ONLY, and render checkboxes safely
+  const booleanCheckboxOptions: { key: keyof typeof conversionConfig; label: string }[] = [
+    { key: "includeComments", label: "Include Comments" },
+    { key: "validateSyntax", label: "Validate YAML Syntax" },
+    { key: "useHandlers", label: "Use Handlers for Reuse" },
+    { key: "useRoles", label: "Use Role-Based Structure" },
+    { key: "useVars", label: "Extract Variables for Reuse" },
+  ];
 
   return (
     <div className="h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-r border-slate-600/30 p-6 space-y-6 overflow-y-auto">
@@ -76,17 +86,11 @@ export default function GenerateSidebar({
         </div>
 
         <div className="space-y-3">
-          {[
-            ["includeComments", "Include Comments"],
-            ["validateSyntax", "Validate YAML Syntax"],
-            ["useHandlers", "Use Handlers for Reuse"],
-            ["useRoles", "Use Role-Based Structure"],
-            ["useVars", "Extract Variables for Reuse"],
-          ].map(([key, label]) => (
+          {booleanCheckboxOptions.map(({ key, label }) => (
             <label key={key} className="flex items-center space-x-3">
               <input
                 type="checkbox"
-                checked={conversionConfig[key as keyof typeof conversionConfig]}
+                checked={!!conversionConfig[key]} // always boolean
                 onChange={(e) => handleChange(key, e.target.checked)}
                 className="w-4 h-4 text-blue-500 bg-slate-700 border-slate-600 rounded"
               />
@@ -104,11 +108,18 @@ export default function GenerateSidebar({
             <span>Context Summary</span>
           </h4>
           <ul className="text-xs text-slate-400 space-y-1 list-disc list-inside">
-            <li><span className="text-slate-200">{contextSummary.docCount}</span> documents matched</li>
-            <li><span className="text-slate-200">{contextSummary.tokens}</span> tokens retrieved</li>
+            <li>
+              <span className="text-slate-200">{contextSummary.docCount}</span> documents matched
+            </li>
+            <li>
+              <span className="text-slate-200">{contextSummary.tokens}</span> tokens retrieved
+            </li>
             {contextSummary.topics.length > 0 && (
               <li>
-                Topics: <span className="text-slate-300">{contextSummary.topics.slice(0, 3).join(", ")}</span>
+                Topics:{" "}
+                <span className="text-slate-300">
+                  {contextSummary.topics.slice(0, 3).join(", ")}
+                </span>
               </li>
             )}
           </ul>
@@ -137,9 +148,33 @@ export default function GenerateSidebar({
           <span>Need help? </span>
         </div>
         <ul className="mt-2 space-y-1 text-xs text-blue-300 underline">
-          <li><a href="https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html" target="_blank" rel="noreferrer">Ansible Best Practices</a></li>
-          <li><a href="https://docs.ansible.com/ansible/latest/playbook_guide/index.html" target="_blank" rel="noreferrer">Playbook Guide</a></li>
-          <li><a href="https://ansible-lint.readthedocs.io/" target="_blank" rel="noreferrer">Ansible Linting</a></li>
+          <li>
+            <a
+              href="https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Ansible Best Practices
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://docs.ansible.com/ansible/latest/playbook_guide/index.html"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Playbook Guide
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://ansible-lint.readthedocs.io/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Ansible Linting
+            </a>
+          </li>
         </ul>
       </div>
     </div>

@@ -1,0 +1,84 @@
+defaults:
+  llama_stack:
+    endpoint: "http://localhost:8321"
+    api_key: null
+    timeout: 60
+    model: "meta-llama/Llama-3.2-3B-Instruct"
+  
+  model:
+    name: "meta-llama/Llama-3.2-3B-Instruct"
+    temperature: 0.7
+    max_tokens: 2048
+  
+  tools:
+    approach: "client_tools"
+    ansible_lint:
+      profile: "basic"
+      timeout: 60
+  
+  agent:
+    instructions: |
+      You are an expert Ansible playbook validation agent.
+    max_infer_iters: 10
+    enable_session_persistence: false
+  
+  app:
+    name: "x2ansible"
+    version: "1.0.0"
+    debug: false
+    cors_origins: ["*"]
+  
+  logging:
+    level: "INFO"
+    format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  
+  # URL configuration section (this might be what's overriding)
+  urls:
+    llama_stack: "http://localhost:8321"
+    frontend: "http://localhost:3000"
+  
+  # Alternative naming
+  llama_stack_url: "http://localhost:8321"
+  frontend_url: "http://localhost:3000"
+
+profiles:
+  local:
+    llama_stack:
+      endpoint: "http://localhost:8321"
+      model: "meta-llama/Llama-3.2-3B-Instruct"
+    urls:
+      llama_stack: "http://localhost:8321"
+      frontend: "http://localhost:3000"
+    llama_stack_url: "http://localhost:8321"
+    frontend_url: "http://localhost:3000"
+    app:
+      debug: true
+    logging:
+      level: "DEBUG"
+  
+  remote:
+    llama_stack:
+      endpoint: "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com"
+      model: "meta-llama/Llama-3.2-3B-Instruct"
+    urls:
+      llama_stack: "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com"
+      frontend: "http://localhost:3000"
+    llama_stack_url: "http://lss-chai.apps.cluster-7nc6z.7nc6z.sandbox2170.opentlc.com"
+    frontend_url: "http://localhost:3000"
+    app:
+      debug: false
+    logging:
+      level: "INFO"
+  
+  production:
+    llama_stack:
+      endpoint: "${LLAMASTACK_ENDPOINT}"
+      api_key: "${LLAMASTACK_API_KEY}"
+      model: "meta-llama/Llama-3.2-3B-Instruct"
+    urls:
+      llama_stack: "${LLAMASTACK_ENDPOINT}"
+      frontend: "${FRONTEND_URL}"
+    llama_stack_url: "${LLAMASTACK_ENDPOINT}"
+    frontend_url: "${FRONTEND_URL}"
+    app:
+      debug: false
