@@ -36,6 +36,24 @@ const workflows = [
     ),
   },
   {
+    key: "DevSecOps",
+    title: "Artifact Promotion Validation (Guided)",
+    description:
+      "Validate the origin of artifacts, and ensure that it is signed and accompanied by provenance attestations before promoting it for pre-production.",
+    icon: <Sparkles className="w-10 h-10 text-cyan-400 drop-shadow-glow" />,
+    cardColor: "from-cyan-900/80 to-cyan-700/60 border-cyan-400/50 shadow-cyan-500/30",
+    buttonColor: "from-cyan-500 via-blue-500 to-sky-400",
+    comingSoon: true,
+    soonContent: (
+      <>
+        <h2 className="text-2xl font-bold text-white mb-2">Coming Soon: Ansible Newbie (Guided)</h2>
+        <p className="text-slate-300 text-center mb-4">
+          Validate the origin of artifacts, and ensure that it is signed and accompanied by provenance attestations before promoting it for pre-production.!
+        </p>
+      </>
+    ),
+  },
+  {
     key: "automation-architect",
     title: "Automation Architect",
     description:
