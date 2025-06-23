@@ -35,15 +35,18 @@ for file in files:
 
         if file.endswith(".pp"):
             playbook = ai.transform(content, "Puppet module")
-        
+
+        if file.endswith(".sls"):
+            playbook = ai.transform(content, "Salt file")
+
         if file.endswith(".yml") or file.endswith(".rb"):
             playbook = ai.transform(content, "Chef Recipe")
 
         pattern = r"```yaml\n(.*?)\n```"
         match = re.search(pattern, playbook, re.DOTALL)
 
-        if match: 
-            playbook = match.group(1) 
+        if match:
+            playbook = match.group(1)
 
         # write the results to output directory and move onto the next directory
         os.makedirs(summary_location, exist_ok=True)
