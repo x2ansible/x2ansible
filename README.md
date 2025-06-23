@@ -10,7 +10,7 @@ Organizations using multiple infrastructure tools face significant challenges wh
 
 ### **The Multi-Tool Reality**
 - **Legacy Systems**: Years of Chef cookbooks managing production infrastructure
-- **Team Preferences**: Different teams adopted Puppet, Terraform, or CloudFormation
+- **Team Preferences**: Different teams adopted Puppet, Salt, Terraform, or CloudFormation
 - **Vendor Migration**: Moving from proprietary tools to open-source alternatives
 - **Platform Consolidation**: Need to standardize on Ansible for operational consistency
 
@@ -56,7 +56,7 @@ This project implements **agents** - autonomous AI entities designed to perform 
 - **Knowledge Base**: Searches for similar patterns, conversion examples, and domain knowledge
 - **Context Enhancement**: Provides relevant background information to inform other agents
 
-#### 🔄 **CodeGeneratorAgent** - The Transformer  
+#### 🔄 **CodeGeneratorAgent** - The Transformer
 - **Role**: Semantic code translation and playbook generation
 - **Capabilities**: Cross-paradigm code conversion, Ansible best practices application
 - **Creative Problem Solving**: Handles complex transformations requiring domain knowledge
@@ -150,7 +150,7 @@ Interested in agent-based workflows and infrastructure automation? Contributions
 
 ### **Research Areas**
 - Agent personality optimization and specialization
-- Workflow orchestration patterns and best practices  
+- Workflow orchestration patterns and best practices
 - Multi-agent coordination and communication protocols
 - Human-agent collaboration interfaces
 - Quality assurance and validation strategies
@@ -165,7 +165,7 @@ Interested in agent-based workflows and infrastructure automation? Contributions
 ## 📚 References and Inspiration
 
 - **LlamaStack**: Agent implementation platform
-- **Infrastructure as Code**: Terraform, Chef, Puppet, Ansible documentation
+- **Infrastructure as Code**: Terraform, Chef, Puppet, Salt, Ansible documentation
 - **DevOps Patterns**: Best practices for infrastructure automation
 - **Multi-Agent Systems**: Academic research on agent collaboration
 - **AI Workflow Research**: Papers on structured AI processing pipelines
@@ -179,7 +179,3 @@ MIT License - Feel free to try, learn, and build upon this work!
 - **DevOps Community**: For the infrastructure patterns we're trying to automate
 - **Open Source Contributors**: For the tools and libraries that make this possible
 - **Infrastructure Engineering Teams**: For real-world use cases and feedback
-
-
-
-

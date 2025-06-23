@@ -24,6 +24,7 @@ _MANUAL_ESTIMATES: Dict[str, float] = {
     "terraform": 5 * 60 * 1000,
     "cloudformation": 5 * 60 * 1000,
     "chef": 7 * 60 * 1000,
+    "salt": 7 * 60 * 1000,
     "puppet": 6 * 60 * 1000,
     "ansible": 4 * 60 * 1000,
     "bash": 3 * 60 * 1000,
@@ -49,7 +50,7 @@ class ClassificationResult:
     convertible: bool = True
     conversion_notes: str = ""
     confidence_source: str = "ai_semantic"
-    
+
     def __post_init__(self):
         if self.resources is None:
             self.resources = []
@@ -65,12 +66,12 @@ class ClassifierAgent:
         self.client = client
         self.model = model
         self.config = get_config()
-        
+
         # Initialize agent with SMART semantic instructions
         self._initialize_agent()
-        
+
         self._last_instructions_hash = hash(self._get_current_instructions())
-        
+
         logger.info(f"SMART ClassifierAgent initialized with semantic analysis: {model}")
 
     def _get_current_instructions(self) -> str:
@@ -132,7 +133,7 @@ ANALYSIS INSTRUCTIONS:
 - Explain the conversion approach if convertible
 - Be realistic but not overly restrictive
 
-Remember: Configuration management tools (Chef, Puppet), infrastructure provisioning tools (Terraform, CloudFormation), and system scripts generally perform operations that Ansible is designed to handle."""
+Remember: Configuration management tools (Chef, Puppet, Salt), infrastructure provisioning tools (Terraform, CloudFormation), and system scripts generally perform operations that Ansible is designed to handle."""
 
     def _initialize_agent(self):
         """Initialize agent with smart semantic instructions"""
@@ -157,7 +158,7 @@ Remember: Configuration management tools (Chef, Puppet), infrastructure provisio
         try:
             current_instructions = self._get_current_instructions()
             current_hash = hash(current_instructions)
-            
+
             if current_hash != self._last_instructions_hash:
                 logger.info("Configuration change detected, reloading agent...")
                 self._initialize_agent()
@@ -178,17 +179,17 @@ Remember: Configuration management tools (Chef, Puppet), infrastructure provisio
             # Single-stage semantic analysis
             raw_result = self._query_agent_semantic(code)
             structured_result = self._format_agent_response(raw_result)
-            
+
             # Build result with semantic confidence
             duration_ms = (time.perf_counter() - start_time) * 1000
             result_dict = self._result_to_dict(structured_result)
             result_dict.update(self._add_performance_metrics(result_dict, duration_ms))
-            
+
             logger.info(f"🧠 SMART semantic classification complete: {result_dict['classification']} "
                        f"(convertible: {result_dict['convertible']}) in {duration_ms:.2f}ms")
-            
+
             return result_dict
-            
+
         except Exception as e:
             logger.error(f"SMART classification failed: {e}", exc_info=True)
             raise ClassificationError(f"Classification failed: {str(e)}") from e
@@ -196,7 +197,7 @@ Remember: Configuration management tools (Chef, Puppet), infrastructure provisio
     def _query_agent_semantic(self, code: str) -> str:
         """Query agent with semantic analysis prompt - no hardcoded rules"""
         session_id = self.agent.create_session("semantic_analysis")
-        
+
         prompt = f"""Analyze this infrastructure code with deep semantic understanding:
 
 <CODE>
@@ -228,7 +229,7 @@ SEMANTIC ANALYSIS GUIDELINES:
 5. EXPLAIN your reasoning clearly
 
 Focus on the infrastructure automation concepts, not syntax patterns. Consider whether the operations can be achieved with Ansible's extensive module ecosystem."""
-        
+
         turn = self.agent.create_turn(
             session_id=session_id,
             messages=[UserMessage(role="user", content=prompt)],
@@ -257,7 +258,7 @@ Focus on the infrastructure automation concepts, not syntax patterns. Consider w
             else:
                 if current_section and line:
                     current_content.append(line)
-        
+
         if current_section:
             self._populate_result_section(result, current_section, current_content)
 
@@ -315,25 +316,25 @@ Focus on the infrastructure automation concepts, not syntax patterns. Consider w
         """Intelligent parsing of convertible response based on reasoning"""
         if not text:
             return True  # Default optimistic
-        
+
         text = text.lower().strip()
-        
+
         # Look for clear positive indicators
         positive_patterns = [
             r'\byes\b', r'\bconvertible\b', r'\bcan be converted\b', r'\bpossible\b',
             r'\bansible can\b', r'\bmodules available\b', r'\bdirect mapping\b'
         ]
-        
+
         # Look for clear negative indicators
         negative_patterns = [
             r'\bno\b.*\bconvert', r'\bnot convertible\b', r'\bcannot be converted\b',
             r'\bimpossible\b', r'\bno ansible\b', r'\boutsaide.*scope\b'
         ]
-        
+
         # Count positive vs negative indicators
         positive_count = sum(1 for pattern in positive_patterns if re.search(pattern, text))
         negative_count = sum(1 for pattern in negative_patterns if re.search(pattern, text))
-        
+
         # Decision based on weight of evidence
         if positive_count > negative_count:
             return True

@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText:  Copyright 2025 Anthony Green
+# SPDX-License-Identifier: MIT
+#
+# Project:  x2ansible
+# File:     build.yaml
+# Date:     2025-06-23
+#
+# ==============================================================================
+
+name: Build
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v2
+
+    - uses: syphar/restore-virtualenv@v1
+      id: cache-virtualenv
+      with:
+        requirement_files: requirements.txt

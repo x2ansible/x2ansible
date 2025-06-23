@@ -77,6 +77,7 @@ Look for these patterns that indicate infrastructure automation:
 TERRAFORM: resource, provider, variable blocks; HCL syntax; AWS/Azure/GCP resources
 CHEF: cookbook, recipe keywords; package/service/file resources; Ruby syntax with do/end
 PUPPET: class, define keywords; package/service/file resources; ensure => syntax
+SALT: *.sls state files, top.sls or pillar/*.sls; YAML with optional Jinja; state IDs followed by pkg.installed, service.running, file.managed, user.present; requisites (require, watch, onchanges); typical paths /srv/salt and /srv/pillar
 ANSIBLE: hosts:, tasks:, playbook structure; YAML format
 CLOUDFORMATION: AWSTemplateFormatVersion, Resources, AWS:: types
 DOCKER: FROM, RUN, COPY instructions; container definitions
