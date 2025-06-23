@@ -180,7 +180,7 @@ class AgenticModel:
             )
         else:
             prompt = (
-                "You are an AI agent that converts Puppet or Chef code to a well-structured Ansible playbook.\n\n"
+                "You are an AI agent that converts Puppet, Chef or Salt code to a well-structured Ansible playbook.\n\n"
                 "Here is the IaC snippet:\n"
                 f"{fenced_code}\n\n"
                 "Here is helpful documentation context retrieved from RAG:\n"
@@ -401,7 +401,7 @@ class AgenticModel:
             )
         else:
             prompt = (
-                "You are an AI agent that converts Puppet or Chef code to a well-structured Ansible playbook.\n\n"
+                "You are an AI agent that converts Puppet, Chef or Salt code to a well-structured Ansible playbook.\n\n"
                 "Here is the IaC snippet:\n"
                 f"{fenced_code}\n\n"
                 "Here is helpful documentation context retrieved from RAG:\n"

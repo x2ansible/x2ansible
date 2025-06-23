@@ -55,7 +55,7 @@ class MaasModel:
         if mode == "analyze":
             return (
                 "You are a DevOps infrastructure code analyst.\n\n"
-                "Your task is to **explain** what the following Chef or Puppet code does.\n\n"
+                "Your task is to **explain** what the following Chef, Puppet or Salt code does.\n\n"
                 "Be concise, clear, and do NOT return YAML or reformat the input.\n\n"
                 "[INPUT]\n"
                 f"{code}\n\n"
@@ -65,7 +65,7 @@ class MaasModel:
             context_block = f"[CONTEXT]\n{context}\n\n" if context else ""
             return (
                 "You are an expert DevOps assistant.\n\n"
-                "Convert the given Chef or Puppet code into a **clean, correct, minimal** Ansible playbook in YAML format.\n\n"
+                "Convert the given Chef, Puppet, or Salt code into a **clean, correct, minimal** Ansible playbook in YAML format.\n\n"
                 "**Strict rules:**\n"
                 "- Output ONLY valid Ansible YAML. No comments, no explanations, no Markdown.\n"
                 "- Start output with `---`\n"
