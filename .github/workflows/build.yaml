@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText:  Copyright 2025 Anthony Green
+# SPDX-License-Identifier: MIT
+#
+# Project:  x2ansible
+# File:     build.yaml
+# Date:     2025-06-23
+#
+# ==============================================================================
+
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+    IMAGE_NAME: x2ansible
+    IMAGE_TAGS: v1 ${{ github.sha }}
+    IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+    REGISTRY_USER: ${{ github.actor }}
+    REGISTRY_PASSWORD: ${{ github.token }}
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        id: setup
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install pylint
+        run: pip install pylint
+
+      - name: Analyse code with pylint
+        run: pylint --fail-under=5.96 $(git ls-files '*.py')
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Build Image
+        id: build_image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: ${{ env.IMAGE_TAGS }}
+          containerfiles: |
+            ./Containerfile
+          oci: true
+
+      - name: Push to ghcr
+        id: push
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ env.REGISTRY_USER }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+          extra-args: |
+            --disable-content-trust
+
+      - name: Echo outputs
+        run: |
+          echo "${{ toJSON(steps.push.outputs) }}"
