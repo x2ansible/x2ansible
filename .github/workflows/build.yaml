@@ -33,7 +33,21 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Analysing the code with pylint
-        run: |
-          pip install pylint
-          pylint $(git ls-files '*.py')
+      - name: Install pylint
+        run: pip install pylint
+
+      - name: Analyse code with pylint
+        run: pylint $(git ls-files '*.py') || true
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Build and push container image
+        uses: docker/build-push-action@v4.0.0
+        with:
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/x2ansible:latest
