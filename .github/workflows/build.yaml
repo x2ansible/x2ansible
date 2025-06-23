@@ -15,6 +15,13 @@ on:
   pull_request:
     branches: [main]
 
+env:
+    IMAGE_NAME: x2ansible
+    IMAGE_TAGS: v1 ${{ github.sha }}
+    IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+    REGISTRY_USER: ${{ github.actor }}
+    REGISTRY_PASSWORD: ${{ github.token }}
+
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -37,7 +44,7 @@ jobs:
         run: pip install pylint
 
       - name: Analyse code with pylint
-        run: pylint $(git ls-files '*.py') || true
+        run: pylint --fail-under=5.96 $(git ls-files '*.py')
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2.1.0
@@ -46,8 +53,28 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ github.token }}
 
-      - name: Build and push container image
-        uses: docker/build-push-action@v4.0.0
+      - name: Build Image
+        id: build_image
+        uses: redhat-actions/buildah-build@v2
         with:
-          push: true
-          tags: ghcr.io/${{ github.repository_owner }}/x2ansible:latest
+          image: ${{ env.IMAGE_NAME }}
+          tags: ${{ env.IMAGE_TAGS }}
+          containerfiles: |
+            ./Containerfile
+          oci: true
+
+      - name: Push to ghcr
+        id: push
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ env.REGISTRY_USER }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+          extra-args: |
+            --disable-content-trust
+
+      - name: Echo outputs
+        run: |
+          echo "${{ toJSON(steps.push.outputs) }}"
