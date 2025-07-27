@@ -1,5 +1,7 @@
 # X2Ansible 🧪
 
+**The code for this project has been migrated and is now available in x2a-api and x2a-ui.**
+
 **An experimental Infrastructure-as-Code transformation tool exploring the use of Agentic AI for automated code conversion.**
 
 <img width="1077" alt="Screenshot 2025-06-01 at 10 56 47 PM" src="https://github.com/user-attachments/assets/aa25c3ca-8d9d-4020-b5ca-3ac07ab5cae0" />
