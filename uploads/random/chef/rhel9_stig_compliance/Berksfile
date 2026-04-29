@@ -1,4 +1,0 @@
-source 'https://supermarket.chef.io'
-cookbook 'stig', '~> 4.0'
-cookbook 'users', '~> 5.6'
-cookbook 'yum-cron', '~> 6.1'
