@@ -38,6 +38,10 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
+      - name: Generate TypeScript declarations
+        working-directory: rhdh-plugins/workspaces/x2a
+        run: yarn tsc
+
       - name: Build and push dynamic plugins
         working-directory: rhdh-plugins/workspaces/x2a
         run: ./scripts/build-dynamic-plugins.sh --push --tag nightly
