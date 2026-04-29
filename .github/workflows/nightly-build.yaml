@@ -38,6 +38,10 @@ jobs:
           username: ${{ secrets.QUAY_USERNAME }}
           password: ${{ secrets.QUAY_PASSWORD }}
 
+      - name: Install workspace dependencies
+        working-directory: rhdh-plugins/workspaces/x2a
+        run: yarn install
+
       - name: Generate TypeScript declarations
         working-directory: rhdh-plugins/workspaces/x2a
         run: yarn tsc
