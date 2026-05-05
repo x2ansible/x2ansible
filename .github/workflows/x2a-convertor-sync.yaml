@@ -1,0 +1,11 @@
+name: x2a-convertor-sync
+
+on:
+  workflow_dispatch:
+
+jobs:
+  x2a-convertor-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder
+        run: echo "x2a-convertor-sync placeholder"
