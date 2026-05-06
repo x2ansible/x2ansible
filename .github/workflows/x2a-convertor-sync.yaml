@@ -46,6 +46,7 @@ jobs:
       - name: Copy generated docs
         run: |
           mkdir -p docs
+          mkdir -p docs/getting-started/
           cp -rv x2a-convertor/docs/* docs/
           ls docs/
 
