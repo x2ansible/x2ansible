@@ -50,12 +50,13 @@ jobs:
             mkdir -p "$(dirname "$file")"
             cp "x2a-convertor/$file" "$file"
           done
-          find docs/
+
 
       - name: Check for changes
         id: changes
         run: |
           git add docs/
+          git status
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
