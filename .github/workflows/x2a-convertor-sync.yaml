@@ -62,16 +62,16 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # - name: Create pull request
-      #   if: steps.changes.outputs.changed == 'true'
-      #   uses: peter-evans/create-pull-request@v7
-      #   with:
-      #     branch: automated/x2a-convertor-docs-sync
-      #     commit-message: "chore: sync generated docs from x2a-convertor"
-      #     title: "chore: sync generated docs from x2a-convertor"
-      #     body: |
-      #       Automated PR to sync generated documentation from
-      #       [x2a-convertor](https://github.com/x2ansible/x2a-convertor).
+      - name: Create pull request
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automated/x2a-convertor-docs-sync
+          commit-message: "chore: sync generated docs from x2a-convertor"
+          title: "chore: sync generated docs from x2a-convertor"
+          body: |
+            Automated PR to sync generated documentation from
+            [x2a-convertor](https://github.com/x2ansible/x2a-convertor).
 
-      #       This PR was created by the `x2a-convertor-sync` workflow.
-      #     add-paths: docs/
+            This PR was created by the `x2a-convertor-sync` workflow.
+          add-paths: docs/
