@@ -50,6 +50,7 @@ jobs:
             mkdir -p "$(dirname "$file")"
             cp "x2a-convertor/$file" "$file"
           done
+          ls -lah
 
 
       - name: Check for changes
