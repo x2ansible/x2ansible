@@ -47,11 +47,13 @@ jobs:
         run: |
           mkdir -p docs
           cp -r x2a-convertor/docs/* docs/
+          ls docs/
 
       - name: Check for changes
         id: changes
         run: |
           git add docs/
+          git status
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
