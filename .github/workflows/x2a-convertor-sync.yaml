@@ -37,27 +37,21 @@ jobs:
         run: uv sync
         working-directory: x2a-convertor
 
-      - name: Generate docs
-        run: make generate-docs
+      - name: Clean docs and regenerate
+        run: |
+          rm -rf x2a-convertor/docs/*
+          make generate-docs
         working-directory: x2a-convertor
 
       - name: Copy generated docs
         run: |
-          cd x2a-convertor
-          changed_docs=$(git diff --name-only -- docs/)
-          cd ..
-          for file in $changed_docs; do
-            mkdir -p "$(dirname "$file")"
-            cp "x2a-convertor/$file" "$file"
-          done
-          ls -lah
-
+          mkdir -p docs
+          cp -r x2a-convertor/docs/* docs/
 
       - name: Check for changes
         id: changes
         run: |
           git add docs/
-          git status
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
