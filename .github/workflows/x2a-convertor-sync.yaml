@@ -41,13 +41,13 @@ jobs:
         run: |
           rm -rf x2a-convertor/docs/*
           cd x2a-convertor
+          # For subfolders issues
+          mkdir -p docs/getting-started/
           make generate-docs
 
       - name: Copy generated docs
         run: |
           mkdir -p docs
-          # For subfolders issues
-          mkdir -p x2a-convertor/docs/getting-started/
           cp -rv x2a-convertor/docs/* docs/
           ls docs/
 
