@@ -39,14 +39,14 @@ jobs:
 
       - name: Clean docs and regenerate
         run: |
-          rm -rf x2a-convertor/docs/*
+          rm -rfv x2a-convertor/docs/*
           make generate-docs
         working-directory: x2a-convertor
 
       - name: Copy generated docs
         run: |
           mkdir -p docs
-          cp -r x2a-convertor/docs/* docs/
+          cp -rv x2a-convertor/docs/* docs/
           ls docs/
 
       - name: Check for changes
