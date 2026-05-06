@@ -43,20 +43,24 @@ jobs:
 
       - name: Copy generated docs
         run: |
-          ls -lah
-          find .
-          mkdir -p docs
-          rsync -a --delete x2a-convertor/docs/ docs/
+          cd x2a-convertor
+          changed_docs=$(git diff --name-only -- docs/)
+          cd ..
+          for file in $changed_docs; do
+            mkdir -p "$(dirname "$file")"
+            cp "x2a-convertor/$file" "$file"
+          done
+          find docs/
 
-      # - name: Check for changes
-      #   id: changes
-      #   run: |
-      #     git add docs/
-      #     if git diff --cached --quiet; then
-      #       echo "changed=false" >> "$GITHUB_OUTPUT"
-      #     else
-      #       echo "changed=true" >> "$GITHUB_OUTPUT"
-      #     fi
+      - name: Check for changes
+        id: changes
+        run: |
+          git add docs/
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       # - name: Create pull request
       #   if: steps.changes.outputs.changed == 'true'
