@@ -3,9 +3,71 @@ name: x2a-convertor-sync
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   x2a-convertor-sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Placeholder
-        run: echo "x2a-convertor-sync placeholder"
+      - name: Checkout x2ansible
+        uses: actions/checkout@v4
+
+      - name: Checkout x2a-convertor
+        uses: actions/checkout@v4
+        with:
+          repository: x2ansible/x2a-convertor
+          path: x2a-convertor
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install
+        working-directory: x2a-convertor
+
+      - name: Install dependencies
+        run: uv sync
+        working-directory: x2a-convertor
+
+      - name: Clean docs and regenerate
+        run: |
+          rm -rf x2a-convertor/docs/*
+          cd x2a-convertor
+          # For subfolders issues
+          mkdir -p docs/getting-started/
+          make generate-docs
+
+      - name: Copy generated docs
+        run: |
+          mkdir -p docs
+          cp -rv x2a-convertor/docs/* docs/
+          ls docs/
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add docs/
+          git status
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create pull request
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automated/x2a-convertor-docs-sync
+          commit-message: "chore: sync generated docs from x2a-convertor"
+          title: "chore: sync generated docs from x2a-convertor"
+          body: |
+            Automated PR to sync generated documentation from
+            [x2a-convertor](https://github.com/x2ansible/x2a-convertor).
+
+            This PR was created by the `x2a-convertor-sync` workflow.
+          add-paths: docs/
