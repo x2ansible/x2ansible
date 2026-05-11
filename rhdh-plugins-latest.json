@@ -1,0 +1,29 @@
+{
+  "latest": {
+    "red-hat-developer-hub-backstage-plugin-x2a-dcr": {
+      "version": "0.2.0",
+      "backstage_version": "1.45.0",
+      "container_image": "quay.io/x2ansible/red-hat-developer-hub-backstage-plugin-x2a-dcr:0.2.0"
+    },
+    "red-hat-developer-hub-backstage-plugin-x2a-backend": {
+      "version": "1.4.2",
+      "backstage_version": "1.45.0",
+      "container_image": "quay.io/x2ansible/red-hat-developer-hub-backstage-plugin-x2a-backend:1.4.2"
+    },
+    "red-hat-developer-hub-backstage-plugin-x2a-mcp-extras": {
+      "version": "0.2.1",
+      "backstage_version": "1.45.0",
+      "container_image": "quay.io/x2ansible/red-hat-developer-hub-backstage-plugin-x2a-mcp-extras:0.2.1"
+    },
+    "red-hat-developer-hub-backstage-plugin-x2a": {
+      "version": "1.2.2",
+      "backstage_version": "1.45.0",
+      "container_image": "quay.io/x2ansible/red-hat-developer-hub-backstage-plugin-x2a:1.2.2"
+    },
+    "red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-x2a": {
+      "version": "0.3.1",
+      "backstage_version": "1.45.0",
+      "container_image": "quay.io/x2ansible/red-hat-developer-hub-backstage-plugin-scaffolder-backend-module-x2a:0.3.1"
+    }
+  }
+}
