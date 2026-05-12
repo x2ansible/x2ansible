@@ -2,7 +2,7 @@
 layout: default
 title: MCP tools
 parent: UI Documentation
-nav_order: 6
+nav_order: 7
 ---
 
 # MCP tools
