@@ -26,8 +26,7 @@ The file must be UTF-8 encoded with a header row. Column order does not matter, 
 
 | Column | Description |
 |---|---|
-| `name` | Unique project name |
-| `abbreviation` | Short project identifier, 1-5 alphanumeric characters matching `^([a-zA-Z][a-zA-Z0-9]*)(-[a-zA-Z0-9]+)*$` |
+| `name` | Unique project name. Also used to derive the project directory in the target repository. |
 | `sourceRepoUrl` | URL of the repository containing the Chef cookbook to convert |
 | `sourceRepoBranch` | Branch to read from in the source repository |
 | `targetRepoBranch` | Branch to write converted Ansible output to |
@@ -45,10 +44,10 @@ No extra columns are allowed -- the import rejects unknown headers.
 ### Example
 
 ```
-name,abbreviation,sourceRepoUrl,sourceRepoBranch,targetRepoUrl,targetRepoBranch,description,ownedByGroup
-web-app,wapp,https://github.com/myorg/web-app-chef,main,https://github.com/myorg/web-app-ansible,main,Convert web app cookbook,team-platform
-db-setup,dbset,gitlab.com?owner=myorg&repo=db-chef,develop,gitlab.com?owner=myorg&repo=db-ansible,main,,
-cache-svc,cache,bitbucket.org?workspace=myws&project=x2a&repo=cache-chef,main,,main,Cache service conversion,
+name,sourceRepoUrl,sourceRepoBranch,targetRepoUrl,targetRepoBranch,description,ownedByGroup
+web-app,https://github.com/myorg/web-app-chef,main,https://github.com/myorg/web-app-ansible,main,Convert web app cookbook,team-platform
+db-setup,gitlab.com?owner=myorg&repo=db-chef,develop,gitlab.com?owner=myorg&repo=db-ansible,main,,
+cache-svc,bitbucket.org?workspace=myws&project=x2a&repo=cache-chef,main,,main,Cache service conversion,
 ```
 
 - **Row 1** (`web-app`): uses plain HTTPS URLs.
