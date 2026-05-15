@@ -13,7 +13,7 @@ The X2Ansible Backstage Plugin provides a web-based user interface for managing 
 
 The UI is built as a Backstage plugin workspace, providing:
 
-- **Project Management**: Create, view, and manage migration projects
+- **Project Management**: Create, view, edit and manage migration projects
 - **Job Orchestration**: Run and monitor migration jobs via Kubernetes
 - **Source Control Integration**: Connect to GitHub, GitLab, and Bitbucket repositories
 - **Ansible Automation Platform**: Deploy migrated playbooks to AAP
