@@ -35,7 +35,6 @@ jobs:
 
       - name: Clean docs and regenerate
         run: |
-          rm -rf x2a-convertor/docs/*
           cd x2a-convertor
           # For subfolders issues
           mkdir -p docs/getting-started/
